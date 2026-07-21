@@ -2,15 +2,15 @@ from fastapi import APIRouter, Cookie, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.database import get_db
-from app.schemas.auth import (
+from app.db.database import get_db
+from app.schemas.auth_schemas import (
     RegisterRequest,
     LoginRequest,
     TokenResponse,
     ForgotPasswordRequest,
     ResetPasswordRequest,
 )
-from app.schemas.user import UserOut
+from app.schemas.user_schemas import UserOut
 from app.services.auth_service import AuthService
 
 router = APIRouter()
