@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.payment import Payment
-from app.schemas.payment import (
+from app.schemas.payment_schemas import (
     PaymentCreate,
     PaymentStatusUpdate,
 )

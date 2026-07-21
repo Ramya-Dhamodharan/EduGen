@@ -152,6 +152,8 @@ activemq-data/
 
 # Environments
 .env
+*.env
+
 .envrc
 .venv
 env/
@@ -219,3 +221,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.env 
+
+__pycache__/
+*.py[cod]

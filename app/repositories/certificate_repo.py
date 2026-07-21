@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.certificate import Certificate
-from app.schemas.certificate import CertificateCreate
+from app.schemas.certificate_schemas import CertificateCreate
 
 
 def get_all_certificates(db: Session):

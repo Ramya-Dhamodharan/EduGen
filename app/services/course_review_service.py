@@ -8,7 +8,7 @@ from app.models.user import User
 from app.models.course_review import CourseReview
 
 from app.repositories import course_review_repo
-from app.schemas.course_review import (
+from app.schemas.course_review_schemas import (
     CourseReviewCreate,
     CourseReviewUpdate,
 )

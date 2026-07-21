@@ -1,7 +1,7 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.quiz_answer import QuizAnswer
-from app.schemas.quiz_answer import (
+from app.schemas.quiz_answer_schemas import (
     QuizAnswerCreate,
     QuizAnswerUpdate
 )

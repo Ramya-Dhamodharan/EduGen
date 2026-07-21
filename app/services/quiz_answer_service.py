@@ -8,7 +8,7 @@ from app.models.quiz_attempt import QuizAttempt
 from app.models.quiz_question import QuizQuestion
 
 from app.repositories import quiz_answer_repo
-from app.schemas.quiz_answer import (
+from app.schemas.quiz_answer_schemas import (
     QuizAnswerCreate,
     QuizAnswerUpdate,
 )

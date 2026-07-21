@@ -7,7 +7,7 @@ from app.models.course import Course
 from app.models.user import User
 
 from app.repositories import certificate_repo
-from app.schemas.certificate import CertificateCreate
+from app.schemas.certificate_schemas import CertificateCreate
 
 
 def get_all_certificates(db: Session):

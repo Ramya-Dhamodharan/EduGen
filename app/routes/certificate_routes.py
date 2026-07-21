@@ -3,8 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.schemas.certificate import (
+from app.db.database import get_db
+from app.schemas.certificate_schemas import (
     CertificateCreate,
     CertificateResponse,
 )

@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.course_review import CourseReview
-from app.schemas.course_review import (
+from app.schemas.course_review_schemas import (
     CourseReviewCreate,
     CourseReviewUpdate,
 )

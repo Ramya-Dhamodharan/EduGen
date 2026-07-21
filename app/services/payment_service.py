@@ -7,7 +7,7 @@ from app.models.course import Course
 from app.models.user import User
 
 from app.repositories import payment_repo
-from app.schemas.payment import (
+from app.schemas.payment_schemas import (
     PaymentCreate,
     PaymentStatusUpdate,
 )

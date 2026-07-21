@@ -3,8 +3,8 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.schemas.user import UserCreate, UserUpdate, UserOut
+from app.db.database import get_db
+from app.schemas.user_schemas import UserCreate, UserUpdate, UserOut
 from app.services.user_service import UserService
 
 router = APIRouter()
