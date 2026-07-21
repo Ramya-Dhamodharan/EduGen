@@ -50,14 +50,6 @@ def create_refresh_token(data: dict) -> str:
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-# ==========================
-# OTP store for password reset (server-side, in-memory)
-# The OTP is stored hashed, is single-use, expires after 5 minutes,
-# and locks out after 5 wrong attempts.
-# NOTE: in-memory works for a single-process dev server. For production
-# with multiple workers, move this to Redis or user-table columns.
-# ==========================
-
 _OTP_TTL_MINUTES = 5
 
 _otp_store: dict[str, dict] = {}

@@ -1,32 +1,102 @@
-import uuid
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+
+from datetime import datetime
+
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    PrimaryKeyConstraint,
+    String,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
 
+if TYPE_CHECKING:
+    from app.models.user import User
+
 
 class Role(Base):
+    """
+    Master table containing all application roles
+    such as Admin, Instructor and Student.
+    """
+
     __tablename__ = "roles"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(50), nullable=False, unique=True)
-
-    created_by = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", use_alter=True, name="fk_roles_created_by_users"),
-        nullable=True,
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="pk_roles"),
+        Index("ix_roles_name", "name"),
+        {
+            "comment": "Stores all user roles available in the LMS."
+        },
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_by = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", use_alter=True, name="fk_roles_updated_by_users"),
-        nullable=True,
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        autoincrement=True,
+        comment="Primary key of the role.",
     )
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    users = relationship("User", back_populates="role", foreign_keys="User.role_id")
+    name: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        unique=True,
+        comment="Unique role name (Admin, Instructor, Student).",
+    )
 
-    def __repr__(self):
-        return f"<Role id={self.id} name={self.name}>"
+    created_by: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "users.id",
+            name="fk_roles_created_by_users",
+            ondelete="SET NULL",
+            onupdate="CASCADE",
+            use_alter=True,
+        ),
+        nullable=True,
+        comment="User who created this role.",
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        comment="Timestamp when the role was created.",
+    )
+
+    updated_by: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "users.id",
+            name="fk_roles_updated_by_users",
+            ondelete="SET NULL",
+            onupdate="CASCADE",
+            use_alter=True,
+        ),
+        nullable=True,
+        comment="User who last updated this role.",
+    )
+
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        server_onupdate=func.now(),
+        nullable=True,
+        comment="Timestamp when the role was last updated.",
+    )
+
+    users: Mapped[list["User"]] = relationship(
+        "User",
+        back_populates="role",
+        foreign_keys="User.role_id",
+    )
+
+    def __repr__(self) -> str:
+        return f"<Role(id={self.id}, name='{self.name}')>"
