@@ -22,9 +22,11 @@ def root():
 
 
 # --- Routers ---
+from app.routes.auth_routes import router as auth_router
 from app.routes.role_routes import router as role_router
 from app.routes.user_routes import router as user_router
 
+app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
 app.include_router(role_router, prefix="/api/roles", tags=["Roles"])
 app.include_router(user_router, prefix="/api/users", tags=["Users"])
 
