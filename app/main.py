@@ -34,3 +34,32 @@ app.include_router(user_router, prefix="/api/users", tags=["Users"])
 #
 # from app.routes.auth_routes import router as auth_router
 # app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+#quiz answer
+from app.routes.quiz_answer_routes import router as quiz_answer_router
+
+from app.models import quiz
+from app.models import quiz_attempt
+from app.models import quiz_question
+from app.models import quiz_answer
+
+app.include_router(
+    quiz_answer_router,
+    tags=["Quiz Answers"]
+)
+#-------------------------------------------------------------------------------
+#-----------------------------certificates-------------------------------------------
+from app.routes.certificate_routes import router as certificate_router
+app.include_router(
+    certificate_router,
+    tags=["Certificates"]
+)
+#-----------------------------------------------------------------------------------
+#-----------------------------course_review-----------------------------------------
+from app.routes.course_review_routes import router as course_review_router
+app.include_router(course_review_router)
+#-----------------------------------------------------------------------------------
+#------------------------------Payments---------------------------------------------
+from app.routes.payment_routes import router as payment_router
+app.include_router(payment_router)
