@@ -14,7 +14,7 @@ from app.core.security import (
 from app.models.user import User
 from app.repositories.role_repo import RoleRepository
 from app.repositories.user_repo import UserRepository
-from app.schemas.auth import RegisterRequest, LoginRequest, ResetPasswordRequest
+from app.schemas.auth_schemas import RegisterRequest, LoginRequest, ResetPasswordRequest
 from app.utils.email import send_otp_email
 
 DEFAULT_ROLE = "Student"
