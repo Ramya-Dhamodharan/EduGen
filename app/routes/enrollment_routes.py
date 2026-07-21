@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.db.database import get_db
 
 from app.schemas.enrollment import (
     EnrollmentCreate,
@@ -13,7 +13,7 @@ from app.schemas.enrollment import (
     StatusUpdate
 )
 
-from app.crud.enrollment import (
+from app.repositories.enrollment_repo import (
     create_enrollment,
     get_all_enrollments,
     get_enrollment_by_id,
