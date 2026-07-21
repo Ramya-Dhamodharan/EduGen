@@ -53,3 +53,23 @@ class RoleChecker:
                 detail="You do not have permission to access this resource",
             )
         return current_user
+
+
+# ==========================
+# Reusable permission presets
+# Import these directly instead of re-instantiating RoleChecker everywhere,
+# so the whole app shares one consistent definition of each policy.
+#
+#   from app.core.dependencies import require_admin, require_staff
+#   router = APIRouter(dependencies=[Depends(require_admin)])
+# ==========================
+
+# Admin only.
+require_admin = RoleChecker(["Admin"])
+
+# Admin OR Instructor ("staff"). Use for course content and catalog.
+require_staff = RoleChecker(["Admin", "Instructor"])
+
+# Any authenticated, active user (Admin, Instructor, or Student).
+# This is just get_current_user; aliased for readability at call sites.
+require_user = get_current_user
