@@ -1,15 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-<<<<<<< Updated upstream
 from app.db.database import get_db
 from app.schemas.user_schemas import UserCreate, UserUpdate, UserOut
 from app.services.user_service import UserService
-=======
 from app.database import get_db
 from app.crud.enrollment import get_student_enrollments
 from app.schemas.enrollment import EnrollmentResponse
->>>>>>> Stashed changes
 
 router = APIRouter(
     prefix="/api/v1/students",

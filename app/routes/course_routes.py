@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status
@@ -80,7 +79,7 @@ def list_quizzes_for_course(course_id: uuid.UUID, db: Session = Depends(get_db))
 def list_enrollments_for_course(course_id: uuid.UUID, db: Session = Depends(get_db)):
     enrollments = CourseService(db).get_enrollments(course_id)
     return [{"id": e.id, "student_id": e.student_id, "status": e.status, "progress": e.progress} for e in enrollments]
-=======
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -106,4 +105,3 @@ def course_enrollments(
         db,
         course_id
     )
->>>>>>> Stashed changes
