@@ -1,5 +1,23 @@
+<<<<<<< Updated upstream
 from __future__ import annotations
 from typing import TYPE_CHECKING
+=======
+import uuid
+
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    ForeignKey,
+)
+
+from sqlalchemy.dialects.postgresql import UUID
+
+from sqlalchemy.sql import func
+
+from sqlalchemy.orm import relationship
+>>>>>>> Stashed changes
 
 import uuid
 from datetime import datetime
@@ -34,6 +52,7 @@ class QuizAttemptStatus(str, Enum):
 
 
 class QuizAttempt(Base):
+<<<<<<< Updated upstream
     """
     Stores every quiz attempt made by students.
     """
@@ -156,10 +175,100 @@ class QuizAttempt(Base):
     )
 
     quiz: Mapped["Quiz"] = relationship(
+=======
+
+    __tablename__ = "quiz_attempts"
+
+    # -----------------------------------------
+    # Primary Key
+    # -----------------------------------------
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    # -----------------------------------------
+    # Student
+    # -----------------------------------------
+
+    student_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+
+    # -----------------------------------------
+    # Quiz
+    # -----------------------------------------
+
+    quiz_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("quizzes.id"),
+        nullable=False,
+    )
+
+    # -----------------------------------------
+    # Attempt Information
+    # -----------------------------------------
+
+    attempt_number = Column(
+        Integer,
+        nullable=False,
+        default=1,
+    )
+
+    score = Column(
+        Integer,
+        nullable=True,
+    )
+
+    status = Column(
+        String(30),
+        nullable=False,
+        default="in_progress",
+    )
+
+    # -----------------------------------------
+    # Started / Submitted
+    # -----------------------------------------
+
+    started_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+    submitted_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    # -----------------------------------------
+    # Audit Fields
+    # -----------------------------------------
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+    updated_at = Column(
+        DateTime(timezone=True),
+        onupdate=func.now(),
+    )
+
+    # -----------------------------------------
+    # Relationships
+    # -----------------------------------------
+
+    quiz = relationship(
+>>>>>>> Stashed changes
         "Quiz",
         back_populates="attempts",
     )
 
+<<<<<<< Updated upstream
     student: Mapped["User"] = relationship(
         "User",
         foreign_keys=[student_id],
@@ -176,3 +285,9 @@ class QuizAttempt(Base):
         return (
             f"<QuizAttempt(id={self.id}, student_id={self.student_id})>"
         )
+=======
+    student = relationship(
+        "User",
+        foreign_keys=[student_id],
+    )
+>>>>>>> Stashed changes
