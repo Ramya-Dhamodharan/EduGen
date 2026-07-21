@@ -14,11 +14,13 @@ from sqlalchemy import (
     Numeric,
     PrimaryKeyConstraint,
     func,
+    Enum as SqlEnum
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+from enum import Enum
 
 if TYPE_CHECKING:
     from app.models.quiz import Quiz
@@ -106,7 +108,7 @@ class QuizAttempt(Base):
     )
 
     status: Mapped[QuizAttemptStatus] = mapped_column(
-        Enum(
+        SqlEnum(
             QuizAttemptStatus,
             name="quiz_attempt_status_enum",
         ),

@@ -12,11 +12,12 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     UniqueConstraint,
     func,
+    Enum as SqlEnum
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base
+from app.db.database import Base
 from enum import Enum
 
 class EnrollmentStatus(str, Enum):
@@ -86,7 +87,7 @@ class Enrollment(Base):
     )
 
     status: Mapped[EnrollmentStatus] = mapped_column(
-        Enum(
+        SqlEnum(
             EnrollmentStatus,
             name="enrollment_status_enum",
         ),

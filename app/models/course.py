@@ -5,6 +5,8 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
+from enum import Enum
+
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -16,8 +18,9 @@ from sqlalchemy import (
     String,
     Text,
     func,
-    Enum
+    Enum as SqlEnum,
 )
+
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -101,7 +104,7 @@ class Course(Base):
     )
 
     level: Mapped[CourseLevel] = mapped_column(
-        Enum(
+        SqlEnum(
             CourseLevel,
             name="course_level_enum",
         ),
