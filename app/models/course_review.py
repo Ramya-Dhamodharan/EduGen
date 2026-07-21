@@ -4,12 +4,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
-from app.database import Base
+from app.db.database import Base
 
 
 class CourseReview(Base):
     __tablename__ = "course_reviews"
-
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id"), nullable=False)
