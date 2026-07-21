@@ -11,7 +11,7 @@ from alembic import context
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app.core.config import settings
-from app.database import Base
+from EduGen.app.db.database import Base
 
 # IMPORTANT: import every model here so Alembic "sees" the tables
 # when autogenerating migrations. Add each new model file as you create it.

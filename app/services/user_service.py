@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.repositories.user_repo import UserRepository
 from app.repositories.role_repo import RoleRepository
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user_schemas import UserCreate, UserUpdate
 
 
 class UserService:

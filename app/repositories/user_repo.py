@@ -3,7 +3,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user_schemas import UserCreate, UserUpdate
 from app.core.security import hash_password
 
 
