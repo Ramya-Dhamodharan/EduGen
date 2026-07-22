@@ -23,6 +23,8 @@ class UserRepository:
         return self.db.query(User).filter(User.email == email).first()
 
     def create(self, data: UserCreate) -> User:
+        print("Present")
+        print(data)
         user = User(
             username=data.username,
             email=data.email,

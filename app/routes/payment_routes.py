@@ -1,115 +1,88 @@
-from uuid import UUID
+import uuid
+from typing import List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.models.user import User
+from app.core.dependencies import get_current_user, require_staff
 from app.schemas.payment_schemas import (
     PaymentCreate,
     PaymentStatusUpdate,
-    PaymentResponse,
+    PaymentWebhook,
+    PaymentOut,
+    ReceiptOut,
 )
-from app.services import payment_service
+from app.services.payment_service import PaymentService
 
-router = APIRouter(
-    prefix="/api",
-    tags=["Payments"]
-)
+router = APIRouter()
 
 
-@router.get(
-    "/payments",
-    response_model=list[PaymentResponse]
-)
-def get_all_payments(
-    db: Session = Depends(get_db)
-):
-    return payment_service.get_all_payments(db)
+def _is_staff(user: User) -> bool:
+    return user.role.name.lower() in ("admin", "instructor")
 
 
-@router.get(
-    "/payments/{payment_id}",
-    response_model=PaymentResponse
-)
-def get_payment_by_id(
-    payment_id: UUID,
-    db: Session = Depends(get_db)
-):
-    return payment_service.get_payment_by_id(
-        db,
-        payment_id
+def _ensure_owner_or_staff(user: User, owner_id: uuid.UUID) -> None:
+    if _is_staff(user) or user.id == owner_id:
+        return
+    raise HTTPException(status.HTTP_403_FORBIDDEN, "You do not have permission to access this resource")
+
+
+# ---- Gateway webhook: NO auth (the gateway calls this, not a user) ----
+# NOTE: in production, verify the gateway's signature header here before trusting it.
+@router.post("/webhook")
+def payment_webhook(payload: PaymentWebhook, db: Session = Depends(get_db)):
+    PaymentService(db).handle_webhook(
+        payload.transaction_id, payload.payment_status, payload.receipt_url
+    )
+    return {"received": True}
+
+
+# ---- Staff: list all ----
+@router.get("", response_model=List[PaymentOut], dependencies=[Depends(require_staff)])
+def list_payments(db: Session = Depends(get_db)):
+    return PaymentService(db).list_all()
+
+
+# ---- Owner or staff: view one ----
+@router.get("/{payment_id}", response_model=PaymentOut)
+def get_payment(payment_id: uuid.UUID, db: Session = Depends(get_db),
+                current_user: User = Depends(get_current_user)):
+    payment = PaymentService(db).get(payment_id)
+    _ensure_owner_or_staff(current_user, payment.student_id)
+    return payment
+
+
+# ---- Student initiates their own payment ----
+@router.post("", response_model=PaymentOut, status_code=status.HTTP_201_CREATED)
+def initiate_payment(payload: PaymentCreate, db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_user)):
+    return PaymentService(db).initiate(current_user.id, payload)
+
+
+# ---- Status update (webhook-style): NO user auth ----
+# Called by the gateway/back-office with the payment id.
+@router.patch("/{payment_id}/status", response_model=PaymentOut)
+def update_payment_status(payment_id: uuid.UUID, payload: PaymentStatusUpdate,
+                          db: Session = Depends(get_db)):
+    return PaymentService(db).update_status(
+        payment_id, payload.payment_status, payload.transaction_id, payload.receipt_url
     )
 
 
-@router.post(
-    "/payments",
-    response_model=PaymentResponse,
-    status_code=status.HTTP_201_CREATED
-)
-def create_payment(
-    payment: PaymentCreate,
-    db: Session = Depends(get_db)
-):
-    return payment_service.create_payment(
-        db,
-        payment
-    )
-
-
-@router.patch(
-    "/payments/{payment_id}/status",
-    response_model=PaymentResponse
-)
-def update_payment_status(
-    payment_id: UUID,
-    payment: PaymentStatusUpdate,
-    db: Session = Depends(get_db)
-):
-    return payment_service.update_payment_status(
-        db,
-        payment_id,
-        payment
-    )
-
-
-@router.get(
-    "/payments/{payment_id}/receipt"
-)
-def get_payment_receipt(
-    payment_id: UUID,
-    db: Session = Depends(get_db)
-):
-    return payment_service.get_payment_receipt(
-        db,
-        payment_id
-    )
-
-
-@router.get(
-    "/students/{student_id}/payments",
-    response_model=list[PaymentResponse]
-)
-def get_student_payments(
-    student_id: UUID,
-    db: Session = Depends(get_db)
-):
-    return payment_service.get_student_payments(
-        db,
-        student_id
-    )
-
-
-@router.post(
-    "/payments/webhook",
-    response_model=PaymentResponse
-)
-def payment_webhook(
-    transaction_id: str,
-    payment: PaymentStatusUpdate,
-    db: Session = Depends(get_db)
-):
-    return payment_service.payment_webhook(
-        db,
-        transaction_id,
-        payment
+# ---- Owner or staff: receipt ----
+@router.get("/{payment_id}/receipt", response_model=ReceiptOut)
+def get_receipt(payment_id: uuid.UUID, db: Session = Depends(get_db),
+                current_user: User = Depends(get_current_user)):
+    payment = PaymentService(db).get(payment_id)
+    _ensure_owner_or_staff(current_user, payment.student_id)
+    return ReceiptOut(
+        payment_id=payment.id,
+        transaction_id=payment.transaction_id,
+        amount=payment.amount,
+        currency=payment.currency,
+        payment_status=payment.payment_status.value if hasattr(payment.payment_status, "value") else payment.payment_status,
+        receipt_url=payment.receipt_url,
+        payment_date=payment.payment_date,
     )

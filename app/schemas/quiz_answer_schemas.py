@@ -1,31 +1,33 @@
-from uuid import UUID
 from decimal import Decimal
-from pydantic import BaseModel, Field
+from uuid import UUID
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class QuizAnswerCreate(BaseModel):
     attempt_id: UUID
     question_id: UUID
-    selected_option: str = Field(
-        pattern="^[ABCD]$",
-        description="Student selected option"
-    )
+    selected_option: Optional[str] = None
+
+
+class QuizAnswerNestedCreate(BaseModel):
+    """Body for POST /quiz-attempts/{attemptId}/answers - attempt_id from path."""
+    question_id: UUID
+    selected_option: Optional[str] = None
 
 
 class QuizAnswerUpdate(BaseModel):
-    selected_option: str = Field(
-        pattern="^[ABCD]$",
-        description="Updated selected option"
-    )
+    selected_option: Optional[str] = None
 
 
-class QuizAnswerResponse(BaseModel):
+class QuizAnswerOut(BaseModel):
     id: UUID
     attempt_id: UUID
     question_id: UUID
-    selected_option: str
-    is_correct: bool
-    marks_obtained: Decimal
+    selected_option: Optional[str] = None
+    is_correct: Optional[bool] = None
+    marks_obtained: Optional[Decimal] = None
 
     class Config:
         from_attributes = True

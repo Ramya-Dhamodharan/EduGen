@@ -225,3 +225,10 @@ __marimo__/
 
 __pycache__/
 *.py[cod]
+
+
+# Python cache
+
+service/__pycache__/
+*.py[cod]
+*$py.class

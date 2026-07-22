@@ -12,6 +12,8 @@ from app.schemas.auth_schemas import (
 )
 from app.schemas.user_schemas import UserOut
 from app.services.auth_service import AuthService
+from app.core.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -39,7 +41,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     return TokenResponse(access_token=access_token)
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh-token", response_model=TokenResponse)
 def refresh(refresh_token: str | None = Cookie(None), db: Session = Depends(get_db)):
     new_access = AuthService(db).refresh(refresh_token)
     return TokenResponse(access_token=new_access)
@@ -61,3 +63,9 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     AuthService(db).reset_password(payload)
     return {"message": "Password updated successfully!"}
+
+
+@router.get("/me", response_model=UserOut)
+def get_me(current_user: User = Depends(get_current_user)):
+    """Return the currently authenticated user. Any logged-in role."""
+    return current_user
