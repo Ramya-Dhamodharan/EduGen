@@ -9,6 +9,7 @@ class LessonCreate(BaseModel):
     description: Optional[str] = None
     video_url: Optional[str] = None
     module_id: UUID
+    position: int = 0
 
 
 class LessonUpdate(BaseModel):
