@@ -1,11 +1,7 @@
-<<<<<<< HEAD
-from fastapi import APIRouter, Depends
-=======
 import uuid
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
->>>>>>> 4cc63f074f7848968be0acde5a8d625115aaebb6
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -21,12 +17,7 @@ from app.schemas.enrollment_schemas import EnrollmentOut
 from app.schemas.certificate_schemas import CertificateOut
 from app.schemas.payment_schemas import PaymentOut
 from app.services.user_service import UserService
-<<<<<<< HEAD
-from app.db.database import get_db
-from app.schemas.enrollment_schemas import EnrollmentResponse
-=======
 from app.core.dependencies import get_current_user, require_admin
->>>>>>> 4cc63f074f7848968be0acde5a8d625115aaebb6
 
 router = APIRouter(
     prefix="/api/v1/students",
@@ -34,20 +25,6 @@ router = APIRouter(
 )
 
 
-<<<<<<< HEAD
-@router.get(
-    "/{student_id}/enrollments",
-    response_model=list[EnrollmentResponse]
-)
-def student_enrollments(
-    student_id: int,
-    db: Session = Depends(get_db)
-):
-    return get_student_enrollments(
-        db,
-        student_id
-    )
-=======
 def _ensure_admin_or_self(current_user: User, target_user_id: uuid.UUID) -> None:
     """Allow if the requester is an Admin or is acting on their own record."""
     if current_user.role.name.lower() == "admin":
@@ -202,4 +179,3 @@ def list_user_payments(
     """List a user's payments. Admin, or the user themselves."""
     _ensure_admin_or_self(current_user, user_id)
     return UserService(db).list_payments(user_id)
->>>>>>> 4cc63f074f7848968be0acde5a8d625115aaebb6
