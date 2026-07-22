@@ -1,7 +1,11 @@
+<<<<<<< HEAD
 import uuid
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
+=======
+from fastapi import APIRouter, Depends
+>>>>>>> origin/dev
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -17,11 +21,21 @@ from app.schemas.enrollment_schemas import EnrollmentOut
 from app.schemas.certificate_schemas import CertificateOut
 from app.schemas.payment_schemas import PaymentOut
 from app.services.user_service import UserService
+<<<<<<< HEAD
 from app.core.dependencies import get_current_user, require_admin
+=======
+from app.database import get_db
+from app.crud.enrollment import get_student_enrollments
+from app.schemas.enrollment import EnrollmentResponse
+>>>>>>> origin/dev
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/api/v1/students",
+    tags=["Students"]
+)
 
 
+<<<<<<< HEAD
 def _ensure_admin_or_self(current_user: User, target_user_id: uuid.UUID) -> None:
     """Allow if the requester is an Admin or is acting on their own record."""
     if current_user.role.name.lower() == "admin":
@@ -176,3 +190,17 @@ def list_user_payments(
     """List a user's payments. Admin, or the user themselves."""
     _ensure_admin_or_self(current_user, user_id)
     return UserService(db).list_payments(user_id)
+=======
+@router.get(
+    "/{student_id}/enrollments",
+    response_model=list[EnrollmentResponse]
+)
+def student_enrollments(
+    student_id: int,
+    db: Session = Depends(get_db)
+):
+    return get_student_enrollments(
+        db,
+        student_id
+    )
+>>>>>>> origin/dev
