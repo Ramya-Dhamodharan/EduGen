@@ -7,6 +7,9 @@ from app.models.user import User
 from app.repositories.user_repo import UserRepository
 from app.repositories.role_repo import RoleRepository
 from app.schemas.user_schemas import UserCreate, UserUpdate
+from app.models.enrollment import Enrollment
+from app.models.certificate import Certificate
+from app.models.payment import Payment
 
 
 class UserService:
@@ -49,6 +52,49 @@ class UserService:
                 detail=f"Role with id {data.role_id} does not exist",
             )
         return self.repo.update(user, data)
+
+    def set_status(self, user_id: uuid.UUID, is_active: bool) -> User:
+        user = self.get_user(user_id)
+        user.is_active = is_active
+        self.repo.db.commit()
+        self.repo.db.refresh(user)
+        return user
+
+    def assign_role(self, user_id: uuid.UUID, role_id: int) -> User:
+        user = self.get_user(user_id)
+        if not self.role_repo.get_by_id(role_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Role with id {role_id} does not exist",
+            )
+        user.role_id = role_id
+        self.repo.db.commit()
+        self.repo.db.refresh(user)
+        return user
+
+    def list_enrollments(self, user_id: uuid.UUID) -> List[Enrollment]:
+        self.get_user(user_id)  # 404 if missing
+        return (
+            self.repo.db.query(Enrollment)
+            .filter(Enrollment.student_id == user_id)
+            .all()
+        )
+
+    def list_certificates(self, user_id: uuid.UUID) -> List[Certificate]:
+        self.get_user(user_id)
+        return (
+            self.repo.db.query(Certificate)
+            .filter(Certificate.student_id == user_id)
+            .all()
+        )
+
+    def list_payments(self, user_id: uuid.UUID) -> List[Payment]:
+        self.get_user(user_id)
+        return (
+            self.repo.db.query(Payment)
+            .filter(Payment.student_id == user_id)
+            .all()
+        )
 
     def delete_user(self, user_id: uuid.UUID) -> None:
         user = self.get_user(user_id)  # raises 404 if missing

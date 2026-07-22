@@ -11,7 +11,9 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     """Fields required to register/create a user."""
-    password: str = Field(..., min_length=8, description="Plain-text password; will be hashed before storing")
+    username: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
     role_id: int
 
 
@@ -21,6 +23,15 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     role_id: Optional[int] = None
     is_active: Optional[bool] = None
+
+class UserStatusUpdate(BaseModel):
+    """Payload for PATCH /users/{id}/status"""
+    is_active: bool
+
+
+class UserRoleUpdate(BaseModel):
+    """Payload for PATCH /users/{id}/role"""
+    role_id: int
 
 
 class UserOut(UserBase):
