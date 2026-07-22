@@ -4,41 +4,68 @@ from typing import List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.course_review import CourseReview
 from app.models.course import Course
-from app.schemas.course_review_schemas import CourseReviewCreate, CourseReviewUpdate
+from app.models.course_review import CourseReview
+from app.repositories.course_review_repo import CourseReviewRepository
+from app.schemas.course_review_schemas import (
+    CourseReviewCreate,
+    CourseReviewUpdate,
+)
 
 
 class CourseReviewService:
     def __init__(self, db: Session):
         self.db = db
+        self.review_repo = CourseReviewRepository(db)
 
     def _get(self, review_id: uuid.UUID) -> CourseReview:
-        r = self.db.query(CourseReview).filter(CourseReview.id == review_id).first()
-        if not r:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, f"Review {review_id} not found")
-        return r
+        review = self.review_repo.get_by_id(review_id)
+
+        if not review:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Review {review_id} not found",
+            )
+
+        return review
 
     def list_all(self) -> List[CourseReview]:
-        return self.db.query(CourseReview).all()
+        return self.review_repo.get_all()
 
     def get(self, review_id: uuid.UUID) -> CourseReview:
         return self._get(review_id)
 
     def list_for_course(self, course_id: uuid.UUID) -> List[CourseReview]:
-        return self.db.query(CourseReview).filter(CourseReview.course_id == course_id).all()
+        return self.review_repo.get_by_course_id(course_id)
 
-    def create(self, student_id: uuid.UUID, data: CourseReviewCreate) -> CourseReview:
-        if not self.db.query(Course).filter(Course.id == data.course_id).first():
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Course {data.course_id} does not exist")
+    def create(
+        self,
+        student_id: uuid.UUID,
+        data: CourseReviewCreate,
+    ) -> CourseReview:
 
-        existing = (
-            self.db.query(CourseReview)
-            .filter(CourseReview.course_id == data.course_id, CourseReview.student_id == student_id)
+        course = (
+            self.db.query(Course)
+            .filter(Course.id == data.course_id)
             .first()
         )
+
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Course {data.course_id} does not exist",
+            )
+
+        existing = self.review_repo.get_by_course_and_student(
+            data.course_id,
+            student_id,
+        )
+
         if existing:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "You have already reviewed this course")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You have already reviewed this course",
+            )
 
         review = CourseReview(
             course_id=data.course_id,
@@ -47,20 +74,22 @@ class CourseReviewService:
             review=data.review,
             created_by=student_id,
         )
-        self.db.add(review)
-        self.db.commit()
-        self.db.refresh(review)
-        return review
 
-    def update(self, review_id: uuid.UUID, data: CourseReviewUpdate) -> CourseReview:
+        return self.review_repo.create(review)
+
+    def update(
+        self,
+        review_id: uuid.UUID,
+        data: CourseReviewUpdate,
+    ) -> CourseReview:
+
         review = self._get(review_id)
+
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(review, field, value)
-        self.db.commit()
-        self.db.refresh(review)
-        return review
+
+        return self.review_repo.update(review)
 
     def delete(self, review_id: uuid.UUID) -> None:
         review = self._get(review_id)
-        self.db.delete(review)
-        self.db.commit()
+        self.review_repo.delete(review)
