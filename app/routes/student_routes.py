@@ -25,45 +25,45 @@ def _ensure_owner_or_staff(user: User, student_id: uuid.UUID) -> None:
     raise HTTPException(status.HTTP_403_FORBIDDEN, "You do not have permission to access this resource")
 
 
+# The student themselves, or staff (Admin/Instructor).
 @router.get("/{student_id}/enrollments", response_model=List[EnrollmentOut])
 def list_student_enrollments(
     student_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List a student's enrollments. The student themselves, or staff."""
     _ensure_owner_or_staff(current_user, student_id)
     return EnrollmentService(db).list_for_student(student_id)
 
 
+# The student themselves, or staff (Admin/Instructor).
 @router.get("/{student_id}/quiz-attempts", response_model=List[QuizAttemptOut])
 def list_student_attempts(
     student_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List a student's quiz attempts. The student themselves, or staff."""
     _ensure_owner_or_staff(current_user, student_id)
     return QuizAttemptService(db).list_for_student(student_id)
 
 
+# The student themselves, or staff (Admin/Instructor).
 @router.get("/{student_id}/certificates", response_model=List[CertificateOut])
 def list_student_certificates(
     student_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List a student's certificates. The student themselves, or staff."""
     _ensure_owner_or_staff(current_user, student_id)
     return CertificateService(db).list_for_student(student_id)
 
 
+# The student themselves, or staff (Admin/Instructor).
 @router.get("/{student_id}/payments", response_model=List[PaymentOut])
 def list_student_payments(
     student_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List a student's payments. The student themselves, or staff."""
     _ensure_owner_or_staff(current_user, student_id)
     return PaymentService(db).list_for_student(student_id)

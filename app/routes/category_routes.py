@@ -7,8 +7,10 @@ from app.db.database import get_db
 from app.schemas.category_schemas import CategoryCreate, CategoryUpdate, CategoryOut
 from app.schemas.course_schemas import CourseOut
 from app.services.category_service import CategoryService
+from app.core.dependencies import require_user, require_staff
 
-router = APIRouter()
+# Reads open to any logged-in user; writes restricted to staff (Admin/Instructor).
+router = APIRouter(dependencies=[Depends(require_user)])
 
 
 @router.get("", response_model=List[CategoryOut])
@@ -21,17 +23,23 @@ def get_category(category_id: uuid.UUID, db: Session = Depends(get_db)):
     return CategoryService(db).get_category(category_id)
 
 
-@router.post("", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
+# Admin or Instructor only.
+@router.post("", response_model=CategoryOut, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(require_staff)])
 def create_category(payload: CategoryCreate, db: Session = Depends(get_db)):
     return CategoryService(db).create_category(payload)
 
 
-@router.put("/{category_id}", response_model=CategoryOut)
+# Admin or Instructor only.
+@router.put("/{category_id}", response_model=CategoryOut,
+            dependencies=[Depends(require_staff)])
 def update_category(category_id: uuid.UUID, payload: CategoryUpdate, db: Session = Depends(get_db)):
     return CategoryService(db).update_category(category_id, payload)
 
 
-@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+# Admin or Instructor only.
+@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(require_staff)])
 def delete_category(category_id: uuid.UUID, db: Session = Depends(get_db)):
     CategoryService(db).delete_category(category_id)
 

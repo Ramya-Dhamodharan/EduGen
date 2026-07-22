@@ -6,14 +6,6 @@ from app.core.config import settings
 # (fixes 'failed to locate a name' for string-based relationships).
 import app.models  # noqa: F401
 
-from app.routes.auth_routes import router as auth_router
-from app.routes.role_routes import router as role_router
-from app.routes.user_routes import router as user_router
-
-from app.routes.quiz_routes import router as quiz_router
-from app.routes.quiz_question_routes import router as quiz_question_router
-from app.routes.quiz_attempt_routes import router as quiz_attempt_router
-
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -61,10 +53,10 @@ from app.routes.quiz_routes import router as quiz_router
 from app.routes.quiz_question_routes import router as quiz_question_router
 from app.routes.quiz_attempt_routes import router as quiz_attempt_router
 from app.routes.quiz_answer_routes import router as quiz_answer_router
-from app.routes.student_routes import router as student_router
 from app.routes.certificate_routes import router as certificate_router
 from app.routes.course_review_routes import router as course_review_router
 from app.routes.payment_routes import router as payment_router
+from app.routes.student_routes import router as student_router
 
 app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
 app.include_router(role_router, prefix="/api/roles", tags=["Roles"])
@@ -78,6 +70,7 @@ app.include_router(quiz_router, prefix="/api/quizzes", tags=["Quizzes"])
 app.include_router(quiz_question_router, prefix="/api/quiz-questions", tags=["Quiz Questions"])
 app.include_router(quiz_attempt_router, prefix="/api/quiz-attempts", tags=["Quiz Attempts"])
 app.include_router(quiz_answer_router, prefix="/api/quiz-answers", tags=["Quiz Answers"])
-app.include_router(student_router, prefix="/api/students", tags=["Students"])
 app.include_router(certificate_router, prefix="/api/certificates", tags=["Certificates"])
 app.include_router(course_review_router, prefix="/api/course-reviews", tags=["Course Reviews"])
+app.include_router(payment_router, prefix="/api/payments", tags=["Payments"])
+app.include_router(student_router, prefix="/api/students", tags=["Students"])
