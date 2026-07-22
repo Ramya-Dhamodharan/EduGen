@@ -1,7 +1,7 @@
 import uuid
 from typing import List
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session  # type: ignore[import]
 
 from app.models.user import User
 from app.repositories.user_repo import UserRepository

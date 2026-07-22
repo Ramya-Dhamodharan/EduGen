@@ -81,4 +81,3 @@ app.include_router(quiz_answer_router, prefix="/api/quiz-answers", tags=["Quiz A
 app.include_router(student_router, prefix="/api/students", tags=["Students"])
 app.include_router(certificate_router, prefix="/api/certificates", tags=["Certificates"])
 app.include_router(course_review_router, prefix="/api/course-reviews", tags=["Course Reviews"])
-app.include_router(payment_router, prefix="/api/payments", tags=["Payments"])
