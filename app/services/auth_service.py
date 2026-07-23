@@ -17,7 +17,7 @@ from app.repositories.user_repo import UserRepository
 from app.schemas.auth_schemas import RegisterRequest, LoginRequest, ResetPasswordRequest
 from app.utils.email import send_otp_email
 
-DEFAULT_ROLE = "Student"
+DEFAULT_ROLE = "student"
 
 
 class AuthService:

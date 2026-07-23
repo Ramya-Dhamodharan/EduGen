@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 
 class QuizQuestionCreate(BaseModel):
     quiz_id: UUID
-    position: int
     question: str
     option_a: Optional[str] = None
     option_b: Optional[str] = None
