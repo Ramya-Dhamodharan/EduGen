@@ -59,5 +59,5 @@ def create_question_under_quiz(
 ):
     from app.services.quiz_question_service import QuizQuestionService
     q = QuizQuestionService(db).create_under_quiz(quiz_id, payload, current_user.id)
-    return {"id": str(q.id), "quiz_id": str(q.quiz_id), "position": q.position,
+    return {"id": str(q.id), "quiz_id": str(q.quiz_id),
             "question": q.question, "marks": q.marks}

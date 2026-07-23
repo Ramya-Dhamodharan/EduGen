@@ -24,7 +24,6 @@ class QuizRepository:
         return (
             self.db.query(QuizQuestion)
             .filter(QuizQuestion.quiz_id == quiz_id)
-            .order_by(QuizQuestion.position)
             .all()
         )
 
