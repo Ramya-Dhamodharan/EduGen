@@ -175,5 +175,5 @@ class QuizQuestion(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<QuizQuestion(id={self.id}, position={self.position})>"
+            f"<QuizQuestion(id={self.id}, position={self.marks}, question='{self.question[:20]}...')>"
         )
