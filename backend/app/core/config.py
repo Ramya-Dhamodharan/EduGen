@@ -29,6 +29,4 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
-# Import this single instance anywhere you need config:
-# from app.core.config import settings
 settings = Settings()

@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-# Import all models so SQLAlchemy registers every mapper at startup
-# (fixes 'failed to locate a name' for string-based relationships).
 import app.models  # noqa: F401
 
 
@@ -38,30 +36,6 @@ def root():
     return {
         "message": f"{settings.APP_NAME} API is running"
     }
-
-
-# --- Database integrity errors -> 400 instead of 500 ---
-# Unique and foreign-key violations are client mistakes (duplicate answer,
-# duplicate enrolment, deleting a row still referenced elsewhere), so they
-# should not surface as Internal Server Error.
-from fastapi import Request
-from fastapi.responses import JSONResponse
-from sqlalchemy.exc import IntegrityError
-
-
-@app.exception_handler(IntegrityError)
-def handle_integrity_error(request: Request, exc: IntegrityError):
-    detail = "This action conflicts with existing data."
-    orig = str(getattr(exc, "orig", "")) or ""
-    if "uq_quiz_answers_attempt_question" in orig:
-        detail = ("This question has already been answered for this attempt. "
-                  "Use PUT /api/quiz-answers/{id} to change the answer.")
-    elif "duplicate key" in orig.lower() or "unique" in orig.lower():
-        detail = "A record with these values already exists."
-    elif "not-null" in orig.lower() or "null value" in orig.lower():
-        detail = ("This record is still referenced by others and cannot be "
-                  "removed or changed.")
-    return JSONResponse(status_code=400, content={"detail": detail})
 
 
 # --- Routers ---

@@ -54,16 +54,6 @@ class RoleChecker:
             )
         return current_user
 
-
-# ==========================
-# Reusable permission presets
-# Import these directly instead of re-instantiating RoleChecker everywhere,
-# so the whole app shares one consistent definition of each policy.
-#
-#   from app.core.dependencies import require_admin, require_staff
-#   router = APIRouter(dependencies=[Depends(require_admin)])
-# ==========================
-
 # Admin only.
 require_admin = RoleChecker(["Admin"])
 
