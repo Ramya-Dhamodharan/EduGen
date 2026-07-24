@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { @apply bg-parchment; }
+  body { @apply text-ledger font-body antialiased; }
+  h1, h2, h3 { @apply font-display; }
+}
+
+@layer utilities {
+  .dash-rule {
+    background-image: repeating-linear-gradient(90deg, #1F3A34 0 6px, transparent 6px 12px);
+    height: 1px;
+  }
+  .tab-active {
+    @apply bg-parchment border-b-2 border-ledger;
+  }
+}
