@@ -231,4 +231,5 @@ __pycache__/
 
 service/__pycache__/
 *.py[cod]
-*$py.class
+*$py.class__pycache__/
+*.pyc
