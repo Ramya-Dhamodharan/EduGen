@@ -86,4 +86,4 @@ def list_quizzes_for_course(course_id: uuid.UUID, db: Session = Depends(get_db))
 @router.get("/{course_id}/enrollments", dependencies=[Depends(require_staff)])
 def list_enrollments_for_course(course_id: uuid.UUID, db: Session = Depends(get_db)):
     enrollments = CourseService(db).get_enrollments(course_id)
-    return [{"id": e.id, "student_id": e.student_id, "status": e.status, "progress": e.progress} for e in enrollments]
+    return [{"id": e.id, "student_id": e.student_id, "status": e.status} for e in enrollments]
