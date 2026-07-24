@@ -104,6 +104,7 @@ class Category(Base):
     courses: Mapped[list["Course"]] = relationship(
         "Course",
         back_populates="category",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:

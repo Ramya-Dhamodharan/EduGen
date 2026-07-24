@@ -39,21 +39,14 @@ class QuizQuestion(Base):
             name="pk_quiz_questions",
         ),
 
-        UniqueConstraint(
-            "quiz_id",
-            "position",
-            name="uq_quiz_questions_position",
-        ),
+        
 
         CheckConstraint(
             "marks > 0",
             name="ck_quiz_questions_marks_positive",
         ),
 
-        CheckConstraint(
-            "position > 0",
-            name="ck_quiz_questions_position_positive",
-        ),
+       
 
         CheckConstraint(
             "correct_option IN ('A','B','C','D')",
@@ -85,11 +78,7 @@ class QuizQuestion(Base):
         comment="Quiz to which this question belongs.",
     )
 
-    position: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        comment="Display order of the question within the quiz.",
-    )
+   
 
     question: Mapped[str] = mapped_column(
         Text,
@@ -186,5 +175,5 @@ class QuizQuestion(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<QuizQuestion(id={self.id}, position={self.position})>"
+            f"<QuizQuestion(id={self.id}, position={self.marks}, question='{self.question[:20]}...')>"
         )

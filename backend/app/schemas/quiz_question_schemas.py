@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 
 class QuizQuestionCreate(BaseModel):
     quiz_id: UUID
-    position: int
     question: str
     option_a: Optional[str] = None
     option_b: Optional[str] = None
@@ -18,7 +17,6 @@ class QuizQuestionCreate(BaseModel):
 
 class QuizQuestionNestedCreate(BaseModel):
     """Body for POST /quizzes/{quizId}/questions - quiz_id comes from the path."""
-    position: int
     question: str
     option_a: Optional[str] = None
     option_b: Optional[str] = None
@@ -29,7 +27,6 @@ class QuizQuestionNestedCreate(BaseModel):
 
 
 class QuizQuestionUpdate(BaseModel):
-    position: Optional[int] = None
     question: Optional[str] = None
     option_a: Optional[str] = None
     option_b: Optional[str] = None
@@ -42,7 +39,6 @@ class QuizQuestionUpdate(BaseModel):
 class QuizQuestionOut(BaseModel):
     id: UUID
     quiz_id: UUID
-    position: int
     question: str
     option_a: Optional[str] = None
     option_b: Optional[str] = None

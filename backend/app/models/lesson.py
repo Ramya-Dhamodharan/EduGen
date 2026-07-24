@@ -39,41 +39,10 @@ class Lesson(Base):
             name="pk_lessons",
         ),
 
-        UniqueConstraint(
-            "module_id",
-            "position",
-            name="uq_lessons_module_position",
-        ),
 
-        CheckConstraint(
-            "position > 0",
-            name="ck_lessons_position_positive",
-        ),
 
-        Index(
-            "ix_lessons_module_id",
-            "module_id",
-        ),
 
-        Index(
-            "ix_lessons_created_by",
-            "created_by",
-        ),
-
-        Index(
-            "ix_lessons_is_active",
-            "is_active",
-        ),
-
-        Index(
-            "ix_lessons_module_active",
-            "module_id",
-            "is_active",
-        ),
-
-        {
-            "comment": "Stores lessons that belong to a module."
-        },
+        
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -101,11 +70,6 @@ class Lesson(Base):
         comment="Video URL associated with the lesson.",
     )
 
-    position: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        comment="Display order of the lesson within the module.",
-    )
 
     module_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

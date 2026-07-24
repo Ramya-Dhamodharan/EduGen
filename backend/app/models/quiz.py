@@ -59,6 +59,11 @@ class Quiz(Base):
             "duration > 0",
             name="ck_quizzes_duration_positive",
         ),
+
+        CheckConstraint(
+            "duration_days > 0",
+            name="ck_quizzes_duration_days_positive",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -120,6 +125,17 @@ class Quiz(Base):
         Integer,
         nullable=True,
         comment="Quiz duration in minutes.",
+    )
+
+    duration_days: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        comment=(
+            "Number of days, counted from a student's enrollment date, "
+            "within which this quiz must be submitted. The submission "
+            "deadline for a student is enrollment.enrolled_at + "
+            "duration_days."
+        ),
     )
 
     is_active: Mapped[bool] = mapped_column(

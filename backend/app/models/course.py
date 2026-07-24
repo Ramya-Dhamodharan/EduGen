@@ -183,31 +183,37 @@ class Course(Base):
     modules: Mapped[list["Module"]] = relationship(
         "Module",
         back_populates="course",
+        cascade="all, delete-orphan",
     )
 
     enrollments: Mapped[list["Enrollment"]] = relationship(
         "Enrollment",
         back_populates="course",
+        cascade="all, delete-orphan",
     )
 
     quizzes: Mapped[list["Quiz"]] = relationship(
         "Quiz",
         back_populates="course",
+        cascade="all, delete-orphan",
     )
 
     reviews: Mapped[list["CourseReview"]] = relationship(
         "CourseReview",
         back_populates="course",
+        cascade="all, delete-orphan",
     )
 
     certificates: Mapped[list["Certificate"]] = relationship(
         "Certificate",
         back_populates="course",
+        cascade="all, delete-orphan",
     )
 
     payments: Mapped[list["Payment"]] = relationship(
         "Payment",
         back_populates="course",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:
