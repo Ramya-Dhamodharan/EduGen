@@ -132,7 +132,10 @@ def update_user(
     _ensure_admin_or_self(current_user, user_id)
 
     if current_user.role.name.lower() != "admin":
-        payload.role_id = None
-        payload.is_active = None
+        # Drop these from the "set" fields entirely. Assigning None marks
+        # them as explicitly set, so model_dump(exclude_unset=True) would
+        # write NULL into two NOT NULL columns.
+        payload.__pydantic_fields_set__.discard("role_id")
+        payload.__pydantic_fields_set__.discard("is_active")
 
     return UserService(db).update_user(user_id, payload)

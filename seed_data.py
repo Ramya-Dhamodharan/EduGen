@@ -1,58 +1,83 @@
 """
-Simple database seeding script.
-Creates the 3 roles (admin, student, instructor) and one admin user.
+Seed the database with the three roles and one test user per role.
 
-Run with:  python -m app.seed.seed_data
+Run from the project root (where app/ lives):
 
-Safe to run multiple times — checks before inserting, won't create duplicates.
+    uv run python seed.py
+    # or:  python seed.py
+
+Safe to re-run: existing rows are reused, not duplicated.
 """
+
 from app.db.database import SessionLocal
+import app.models  # registers every mapper
 from app.models.role import Role
 from app.models.user import User
 from app.core.security import hash_password
 
+ROLES = ["Admin", "Instructor", "Student"]
 
-def run():
+USERS = [
+    # (username,        email,                     password,        role)
+    ("admin",      "admin@edugen.com",      "Admin@12345",      "Admin"),
+    ("instructor", "instructor@edugen.com", "Instructor@12345", "Instructor"),
+    ("student",    "student@edugen.com",    "Student@12345",    "Student"),
+]
+
+
+def main() -> None:
     db = SessionLocal()
     try:
-        # ---------- Roles ----------
-        role_names = ["admin", "student", "instructor"]
-        roles = {}
-        for name in role_names:
+        # ---- roles ----
+        role_map = {}
+        for name in ROLES:
             role = db.query(Role).filter(Role.name == name).first()
             if not role:
                 role = Role(name=name)
                 db.add(role)
-                db.commit()
-                db.refresh(role)
-                print(f"Created role: {name}")
+                db.flush()
+                print(f"  + created role {name} (id={role.id})")
             else:
-                print(f"Role already exists, skipping: {name}")
-            roles[name] = role
+                print(f"  = role {name} already exists (id={role.id})")
+            role_map[name] = role
 
-        # ---------- Admin user ----------
-        admin_user = db.query(User).filter(User.email == "admin@edugen.com").first()
-        if not admin_user:
-            admin_user = User(
-                username="admin",
-                email="admin@edugen.com",
-                password_hash=hash_password("Admin@123"),
-                role_id=roles["admin"].id,
+        # ---- users ----
+        for username, email, password, role_name in USERS:
+            user = db.query(User).filter(User.email == email).first()
+            if user:
+                # keep the role correct even if the user already existed
+                user.role_id = role_map[role_name].id
+                print(f"  = user {email} already exists -> role set to {role_name}")
+                continue
+
+            user = User(
+                username=username,
+                email=email,
+                password_hash=hash_password(password),
+                role_id=role_map[role_name].id,
                 is_active=True,
             )
-            db.add(admin_user)
-            db.commit()
-            db.refresh(admin_user)
-            print(f"Created admin user: {admin_user.email}")
-        else:
-            print("Admin user already exists, skipping")
+            db.add(user)
+            db.flush()
+            # self-referencing audit column
+            user.created_by = user.id
+            print(f"  + created {role_name}: {email} / {password}")
 
-        print("\n✅ Seeding complete.")
-        print(f"   admin login  -> email: {admin_user.email}  password: Admin@123")
+        db.commit()
 
+        print("\nSeed complete. Login credentials:")
+        for username, email, password, role_name in USERS:
+            print(f"  {role_name:<11} {email:<26} {password}")
+        print("\nRole ids (needed for POST /api/users):")
+        for name, role in role_map.items():
+            print(f"  {name:<11} role_id = {role.id}")
+
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
 
 
 if __name__ == "__main__":
-    run()
+    main()

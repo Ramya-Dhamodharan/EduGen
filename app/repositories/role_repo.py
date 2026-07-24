@@ -20,7 +20,8 @@ class RoleRepository:
         return self.db.query(Role).filter(Role.id == role_id).first()
 
     def get_by_name(self, name: str) -> Optional[Role]:
-        return self.db.query(Role).filter(Role.name == name).first()
+        # Case-insensitive so "student" also matches a "Student" row.
+        return self.db.query(Role).filter(Role.name.ilike(name)).first()
 
     def create(self, data: RoleCreate) -> Role:
         role = Role(name=data.name)
