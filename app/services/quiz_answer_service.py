@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.quiz_answer import QuizAnswer
-from app.models.quiz_attempt import QuizAttempt
+from app.models.quiz_attempt import QuizAttempt, QuizAttemptStatus
 from app.models.quiz_question import QuizQuestion
 from app.repositories.quiz_answer_repo import QuizAnswerRepository
 
@@ -85,6 +85,12 @@ class QuizAnswerService:
                 detail=f"Attempt {attempt_id} does not exist",
             )
 
+        if attempt.status == QuizAttemptStatus.COMPLETED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This quiz has already been submitted and cannot be modified.",
+            )
+
         # One answer per (attempt, question) - matches the DB constraint
         # uq_quiz_answers_attempt_question.
         existing = (
@@ -125,6 +131,12 @@ class QuizAnswerService:
     ) -> QuizAnswer:
 
         answer = self._get(answer_id)
+
+        if answer.attempt.status == QuizAttemptStatus.COMPLETED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This quiz has already been submitted and cannot be modified.",
+            )
 
         is_correct, marks = self._grade(
             answer.question_id,

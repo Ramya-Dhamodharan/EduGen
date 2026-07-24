@@ -66,6 +66,7 @@ class QuizService:
             total_marks=data.total_marks,
             pass_marks=data.pass_marks,
             duration=data.duration,
+            duration_days=data.duration_days,
             is_active=True,
             created_by=created_by,
         )
@@ -89,6 +90,7 @@ class QuizService:
             total_marks=data.total_marks,
             pass_marks=data.pass_marks,
             duration=data.duration,
+            duration_days=data.duration_days,
             is_active=True,
             created_by=created_by,
         )

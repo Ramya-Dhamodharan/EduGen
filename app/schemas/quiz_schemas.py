@@ -13,6 +13,7 @@ class QuizCreate(BaseModel):
     total_marks: Optional[int] = None
     pass_marks: Optional[int] = None
     duration: Optional[int] = None
+    duration_days: Optional[int] = None
 
 
 class QuizNestedCreate(BaseModel):
@@ -23,6 +24,7 @@ class QuizNestedCreate(BaseModel):
     total_marks: Optional[int] = None
     pass_marks: Optional[int] = None
     duration: Optional[int] = None
+    duration_days: Optional[int] = None
 
 
 class QuizUpdate(BaseModel):
@@ -31,6 +33,7 @@ class QuizUpdate(BaseModel):
     total_marks: Optional[int] = None
     pass_marks: Optional[int] = None
     duration: Optional[int] = None
+    duration_days: Optional[int] = None
     is_active: Optional[bool] = None
 
 
@@ -43,6 +46,7 @@ class QuizOut(BaseModel):
     total_marks: Optional[int] = None
     pass_marks: Optional[int] = None
     duration: Optional[int] = None
+    duration_days: Optional[int] = None
     is_active: bool
 
     class Config:

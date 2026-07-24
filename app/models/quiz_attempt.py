@@ -13,6 +13,8 @@ from sqlalchemy import (
     Index,
     Numeric,
     PrimaryKeyConstraint,
+    Text,
+    String,
     func,
     Enum as SqlEnum
 )
@@ -31,7 +33,13 @@ class QuizAttemptStatus(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     ABANDONED = "ABANDONED"
- 
+
+
+class SubmissionStatus(str, Enum):
+    ON_TIME = "ON_TIME"
+    DELAYED = "DELAYED"
+
+
  
 class QuizAttempt(Base):
     """
@@ -114,6 +122,40 @@ class QuizAttempt(Base):
         ),
         nullable=False,
         comment="Current status of the quiz attempt.",
+    )
+
+    submission_status: Mapped[SubmissionStatus | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment=(
+            "ON_TIME or DELAYED, computed at submission time by comparing "
+            "completed_at against enrollment.enrolled_at + quiz.duration_days. "
+            "Null until the attempt is submitted."
+        ),
+    )
+
+    feedback: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Instructor feedback for this quiz attempt.",
+    )
+
+    feedback_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "users.id",
+            name="fk_quiz_attempts_feedback_by_users",
+            ondelete="SET NULL",
+            onupdate="CASCADE",
+        ),
+        nullable=True,
+        comment="Instructor who gave the feedback.",
+    )
+
+    feedback_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Time when the feedback was given.",
     )
  
     created_by: Mapped[uuid.UUID | None] = mapped_column(
