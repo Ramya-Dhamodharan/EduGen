@@ -1,27 +1,25 @@
-from collections.abc import AsyncGenerator
+from collections.abc import Generator
 
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import create_engine  
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker 
 
 from app.core.config import settings
 
 
-engine = create_async_engine(
+engine = create_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,
+    future=True,
     pool_pre_ping=True,
+    echo=settings.DEBUG,
 )
 
 
-SessionLocal = async_sessionmaker(
+SessionLocal = sessionmaker(
     bind=engine,
-    class_=AsyncSession,
     autoflush=False,
+    autocommit=False,
     expire_on_commit=False,
+    future=True,
 )
 
 
@@ -32,10 +30,14 @@ class Base(DeclarativeBase):
     pass
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+def get_db() -> Generator[Session, None, None]:
     """
-    FastAPI dependency that provides an async database session
+    FastAPI dependency that provides a database session
     for each request and ensures it is closed afterwards.
     """
-    async with SessionLocal() as session:
-        yield session
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
