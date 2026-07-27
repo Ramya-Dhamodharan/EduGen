@@ -10,12 +10,11 @@ from app.core.config import settings
 
 
 # ==========================
-# Password hashing (bcrypt, no passlib)
+# Password hashing 
 # ==========================
 
 def _to_bcrypt_bytes(password: str) -> bytes:
-    # bcrypt only uses the first 72 bytes; truncate explicitly so
-    return password.encode("utf-8")[:72]
+    return password.encode("utf-8")
 
 
 def hash_password(password: str) -> str:
