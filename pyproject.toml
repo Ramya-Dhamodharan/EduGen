@@ -13,3 +13,4 @@ dependencies = [
     "python-jose[cryptography]>=3.5.0",
     "sqlalchemy>=2.0.51",
 ]
+
