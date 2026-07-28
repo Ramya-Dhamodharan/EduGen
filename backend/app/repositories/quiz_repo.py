@@ -1,43 +1,67 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quiz import Quiz
 from app.models.quiz_question import QuizQuestion
 
 
 class QuizRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_by_id(self, quiz_id: uuid.UUID) -> Quiz | None:
-        return (
-            self.db.query(Quiz)
-            .filter(Quiz.id == quiz_id)
-            .first()
+    async def get_by_id(
+        self,
+        quiz_id: uuid.UUID,
+    ) -> Quiz | None:
+        result = await self.db.execute(
+            select(Quiz).where(
+                Quiz.id == quiz_id
+            )
         )
+        return result.scalar_one_or_none()
 
-    def get_all(self) -> list[Quiz]:
-        return self.db.query(Quiz).all()
-
-    def get_questions(self, quiz_id: uuid.UUID) -> list[QuizQuestion]:
-        return (
-            self.db.query(QuizQuestion)
-            .filter(QuizQuestion.quiz_id == quiz_id)
-            .all()
+    async def get_all(self) -> list[Quiz]:
+        result = await self.db.execute(
+            select(Quiz)
         )
+        return result.scalars().all()
 
-    def create(self, quiz: Quiz) -> Quiz:
+    async def get_questions(
+        self,
+        quiz_id: uuid.UUID,
+    ) -> list[QuizQuestion]:
+        result = await self.db.execute(
+            select(QuizQuestion).where(
+                QuizQuestion.quiz_id == quiz_id
+            )
+        )
+        return result.scalars().all()
+
+    async def create(
+        self,
+        quiz: Quiz,
+    ) -> Quiz:
         self.db.add(quiz)
-        self.db.commit()
-        self.db.refresh(quiz)
+
+        await self.db.commit()
+        await self.db.refresh(quiz)
+
         return quiz
 
-    def update(self, quiz: Quiz) -> Quiz:
-        self.db.commit()
-        self.db.refresh(quiz)
+    async def update(
+        self,
+        quiz: Quiz,
+    ) -> Quiz:
+        await self.db.commit()
+        await self.db.refresh(quiz)
+
         return quiz
 
-    def delete(self, quiz: Quiz) -> None:
-        self.db.delete(quiz)
-        self.db.commit()
+    async def delete(
+        self,
+        quiz: Quiz,
+    ) -> None:
+        await self.db.delete(quiz)
+        await self.db.commit()

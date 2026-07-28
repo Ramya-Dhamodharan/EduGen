@@ -1,30 +1,49 @@
 import uuid
 from typing import List, Optional
-from sqlalchemy.orm import Session
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import hash_password
 from app.models.user import User
 from app.schemas.user_schemas import UserCreate, UserUpdate
-from app.core.security import hash_password
 
 
 class UserRepository:
     """Pure data-access layer for the users table."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_all(self) -> List[User]:
-        return self.db.query(User).all()
+    async def get_all(self) -> List[User]:
+        result = await self.db.execute(select(User))
+        return result.scalars().all()
 
-    def get_by_id(self, user_id: uuid.UUID) -> Optional[User]:
-        return self.db.query(User).filter(User.id == user_id).first()
+    async def get_by_id(
+        self,
+        user_id: uuid.UUID,
+    ) -> Optional[User]:
+        result = await self.db.execute(
+            select(User).where(User.id == user_id)
+        )
+        return result.scalar_one_or_none()
 
-    def get_by_email(self, email: str) -> Optional[User]:
-        return self.db.query(User).filter(User.email == email).first()
+    async def get_by_email(
+        self,
+        email: str,
+    ) -> Optional[User]:
+        result = await self.db.execute(
+            select(User).where(User.email == email)
+        )
+        return result.scalar_one_or_none()
 
-    def create(self, data: UserCreate) -> User:
+    async def create(
+        self,
+        data: UserCreate,
+    ) -> User:
         print("Present")
         print(data)
+
         user = User(
             username=data.username,
             email=data.email,
@@ -32,19 +51,31 @@ class UserRepository:
             role_id=data.role_id,
             is_active=True,
         )
+
         self.db.add(user)
-        self.db.commit()
-        self.db.refresh(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
         return user
 
-    def update(self, user: User, data: UserUpdate) -> User:
+    async def update(
+        self,
+        user: User,
+        data: UserUpdate,
+    ) -> User:
         update_data = data.model_dump(exclude_unset=True)
+
         for field, value in update_data.items():
             setattr(user, field, value)
-        self.db.commit()
-        self.db.refresh(user)
+
+        await self.db.commit()
+        await self.db.refresh(user)
+
         return user
 
-    def delete(self, user: User) -> None:
-        self.db.delete(user)
-        self.db.commit()
+    async def delete(
+        self,
+        user: User,
+    ) -> None:
+        await self.db.delete(user)
+        await self.db.commit()

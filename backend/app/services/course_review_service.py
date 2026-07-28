@@ -2,7 +2,8 @@ import uuid
 from typing import List
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.course import Course
 from app.models.course_review import CourseReview
@@ -14,12 +15,12 @@ from app.schemas.course_review_schemas import (
 
 
 class CourseReviewService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.review_repo = CourseReviewRepository(db)
 
-    def _get(self, review_id: uuid.UUID) -> CourseReview:
-        review = self.review_repo.get_by_id(review_id)
+    async def _get(self, review_id: uuid.UUID) -> CourseReview:
+        review = await self.review_repo.get_by_id(review_id)
 
         if not review:
             raise HTTPException(
@@ -29,26 +30,28 @@ class CourseReviewService:
 
         return review
 
-    def list_all(self) -> List[CourseReview]:
-        return self.review_repo.get_all()
+    async def list_all(self) -> List[CourseReview]:
+        return await self.review_repo.get_all()
 
-    def get(self, review_id: uuid.UUID) -> CourseReview:
-        return self._get(review_id)
+    async def get(self, review_id: uuid.UUID) -> CourseReview:
+        return await self._get(review_id)
 
-    def list_for_course(self, course_id: uuid.UUID) -> List[CourseReview]:
-        return self.review_repo.get_by_course_id(course_id)
+    async def list_for_course(
+        self,
+        course_id: uuid.UUID,
+    ) -> List[CourseReview]:
+        return await self.review_repo.get_by_course_id(course_id)
 
-    def create(
+    async def create(
         self,
         student_id: uuid.UUID,
         data: CourseReviewCreate,
     ) -> CourseReview:
 
-        course = (
-            self.db.query(Course)
-            .filter(Course.id == data.course_id)
-            .first()
+        result = await self.db.execute(
+            select(Course).where(Course.id == data.course_id)
         )
+        course = result.scalar_one_or_none()
 
         if not course:
             raise HTTPException(
@@ -56,7 +59,7 @@ class CourseReviewService:
                 detail=f"Course {data.course_id} does not exist",
             )
 
-        existing = self.review_repo.get_by_course_and_student(
+        existing = await self.review_repo.get_by_course_and_student(
             data.course_id,
             student_id,
         )
@@ -75,21 +78,24 @@ class CourseReviewService:
             created_by=student_id,
         )
 
-        return self.review_repo.create(review)
+        return await self.review_repo.create(review)
 
-    def update(
+    async def update(
         self,
         review_id: uuid.UUID,
         data: CourseReviewUpdate,
     ) -> CourseReview:
 
-        review = self._get(review_id)
+        review = await self._get(review_id)
 
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(review, field, value)
 
-        return self.review_repo.update(review)
+        return await self.review_repo.update(review)
 
-    def delete(self, review_id: uuid.UUID) -> None:
-        review = self._get(review_id)
-        self.review_repo.delete(review)
+    async def delete(
+        self,
+        review_id: uuid.UUID,
+    ) -> None:
+        review = await self._get(review_id)
+        await self.review_repo.delete(review)

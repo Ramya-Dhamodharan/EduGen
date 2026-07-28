@@ -2,7 +2,8 @@ import uuid
 from typing import List
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quiz import Quiz
 from app.models.quiz_question import QuizQuestion
@@ -14,12 +15,12 @@ from app.schemas.quiz_question_schemas import (
 
 
 class QuizQuestionService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.question_repo = QuizQuestionRepository(db)
 
-    def _get(self, question_id: uuid.UUID) -> QuizQuestion:
-        question = self.question_repo.get_by_id(question_id)
+    async def _get(self, question_id: uuid.UUID) -> QuizQuestion:
+        question = await self.question_repo.get_by_id(question_id)
 
         if not question:
             raise HTTPException(
@@ -29,12 +30,11 @@ class QuizQuestionService:
 
         return question
 
-    def _validate_quiz(self, quiz_id: uuid.UUID) -> None:
-        quiz = (
-            self.db.query(Quiz)
-            .filter(Quiz.id == quiz_id)
-            .first()
+    async def _validate_quiz(self, quiz_id: uuid.UUID) -> None:
+        result = await self.db.execute(
+            select(Quiz).where(Quiz.id == quiz_id)
         )
+        quiz = result.scalar_one_or_none()
 
         if not quiz:
             raise HTTPException(
@@ -42,35 +42,35 @@ class QuizQuestionService:
                 detail=f"Quiz {quiz_id} does not exist",
             )
 
-    def list_all(self) -> List[QuizQuestion]:
-        return self.question_repo.get_all()
+    async def list_all(self) -> List[QuizQuestion]:
+        return await self.question_repo.get_all()
 
-    def get(self, question_id: uuid.UUID) -> QuizQuestion:
-        return self._get(question_id)
+    async def get(self, question_id: uuid.UUID) -> QuizQuestion:
+        return await self._get(question_id)
 
-    def create(
+    async def create(
         self,
         data: QuizQuestionCreate,
         created_by: uuid.UUID,
     ) -> QuizQuestion:
 
-        self._validate_quiz(data.quiz_id)
+        await self._validate_quiz(data.quiz_id)
 
         question = QuizQuestion(
             **data.model_dump(),
             created_by=created_by,
         )
 
-        return self.question_repo.create(question)
+        return await self.question_repo.create(question)
 
-    def create_under_quiz(
+    async def create_under_quiz(
         self,
         quiz_id: uuid.UUID,
         data,
         created_by: uuid.UUID,
     ) -> QuizQuestion:
 
-        self._validate_quiz(quiz_id)
+        await self._validate_quiz(quiz_id)
 
         question = QuizQuestion(
             quiz_id=quiz_id,
@@ -78,21 +78,25 @@ class QuizQuestionService:
             created_by=created_by,
         )
 
-        return self.question_repo.create(question)
+        return await self.question_repo.create(question)
 
-    def update(
+    async def update(
         self,
         question_id: uuid.UUID,
         data: QuizQuestionUpdate,
     ) -> QuizQuestion:
 
-        question = self._get(question_id)
+        question = await self._get(question_id)
 
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(question, field, value)
 
-        return self.question_repo.update(question)
+        return await self.question_repo.update(question)
 
-    def delete(self, question_id: uuid.UUID) -> None:
-        question = self._get(question_id)
-        self.question_repo.delete(question)
+    async def delete(
+        self,
+        question_id: uuid.UUID,
+    ) -> None:
+
+        question = await self._get(question_id)
+        await self.question_repo.delete(question)

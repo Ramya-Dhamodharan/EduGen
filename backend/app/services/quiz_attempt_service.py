@@ -4,22 +4,27 @@ from decimal import Decimal
 from typing import List
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enrollment import Enrollment
 from app.models.quiz import Quiz
 from app.models.quiz_answer import QuizAnswer
-from app.models.quiz_attempt import QuizAttempt, QuizAttemptStatus, SubmissionStatus
+from app.models.quiz_attempt import (
+    QuizAttempt,
+    QuizAttemptStatus,
+    SubmissionStatus,
+)
 from app.repositories.quiz_attempt_repo import QuizAttemptRepository
 
 
 class QuizAttemptService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.attempt_repo = QuizAttemptRepository(db)
 
-    def _get(self, attempt_id: uuid.UUID) -> QuizAttempt:
-        attempt = self.attempt_repo.get_by_id(attempt_id)
+    async def _get(self, attempt_id: uuid.UUID) -> QuizAttempt:
+        attempt = await self.attempt_repo.get_by_id(attempt_id)
 
         if not attempt:
             raise HTTPException(
@@ -29,54 +34,46 @@ class QuizAttemptService:
 
         return attempt
 
-    def list_all(self) -> List[QuizAttempt]:
-        return self.attempt_repo.get_all()
+    async def list_all(self) -> List[QuizAttempt]:
+        return await self.attempt_repo.get_all()
 
-    def get(self, attempt_id: uuid.UUID) -> QuizAttempt:
-        return self._get(attempt_id)
+    async def get(self, attempt_id: uuid.UUID) -> QuizAttempt:
+        return await self._get(attempt_id)
 
-    def list_for_student(
+    async def list_for_student(
         self,
         student_id: uuid.UUID,
     ) -> List[QuizAttempt]:
-        return self.attempt_repo.get_by_student_id(student_id)
+        return await self.attempt_repo.get_by_student_id(student_id)
 
-    def list_answers(
+    async def list_answers(
         self,
         attempt_id: uuid.UUID,
     ) -> List[QuizAnswer]:
-        self._get(attempt_id)
-        return self.attempt_repo.get_answers(attempt_id)
+        await self._get(attempt_id)
+        return await self.attempt_repo.get_answers(attempt_id)
 
-    def list_in_progress_for_student(
+    async def list_in_progress_for_student(
         self,
         student_id: uuid.UUID,
         quiz_id: uuid.UUID | None = None,
     ) -> List[QuizAttempt]:
-        return self.attempt_repo.get_in_progress_for_student(student_id, quiz_id)
+        return await self.attempt_repo.get_in_progress_for_student(
+            student_id,
+            quiz_id,
+        )
 
-    def start(
+    async def start(
         self,
         student_id: uuid.UUID,
         quiz_id: uuid.UUID,
     ) -> QuizAttempt:
-        """Start a quiz, or transparently resume an unfinished one.
+        """Start a quiz, or transparently resume an unfinished one."""
 
-        A student is only ever in one of two states for a given quiz:
-        no attempt yet, or an IN_PROGRESS attempt they can continue. If an
-        IN_PROGRESS attempt already exists we return it as-is (no new row,
-        no reset of previously saved answers) so that calling this again
-        after a browser refresh, a dropped connection, or a fresh login
-        always lands the student back where they left off. Once an attempt
-        is COMPLETED it is never returned here, so a new call starts a
-        brand new attempt instead of resuming a submitted one.
-        """
-
-        quiz = (
-            self.db.query(Quiz)
-            .filter(Quiz.id == quiz_id)
-            .first()
+        result = await self.db.execute(
+            select(Quiz).where(Quiz.id == quiz_id)
         )
+        quiz = result.scalar_one_or_none()
 
         if not quiz:
             raise HTTPException(
@@ -84,7 +81,7 @@ class QuizAttemptService:
                 detail=f"Quiz {quiz_id} does not exist",
             )
 
-        existing = self.attempt_repo.get_in_progress_for_quiz(
+        existing = await self.attempt_repo.get_in_progress_for_quiz(
             student_id,
             quiz_id,
         )
@@ -100,52 +97,50 @@ class QuizAttemptService:
             created_by=student_id,
         )
 
-        return self.attempt_repo.create(attempt)
+        return await self.attempt_repo.create(attempt)
 
-    def update(
+    async def update(
         self,
         attempt_id: uuid.UUID,
         status_value: str | None,
     ) -> QuizAttempt:
 
-        attempt = self._get(attempt_id)
+        attempt = await self._get(attempt_id)
 
         if status_value:
             attempt.status = QuizAttemptStatus(status_value)
 
-        return self.attempt_repo.update(attempt)
+        return await self.attempt_repo.update(attempt)
 
-    def _resolve_deadline(self, quiz: Quiz, student_id: uuid.UUID) -> datetime | None:
-        """The submission deadline for this student on this quiz, if any.
+    async def _resolve_deadline(
+        self,
+        quiz: Quiz,
+        student_id: uuid.UUID,
+    ) -> datetime | None:
+        """The submission deadline for this student on this quiz, if any."""
 
-        deadline = student's enrollment date (in the quiz's course) +
-        quiz.duration_days. Returns None if the quiz has no duration_days
-        configured, or if the student has no enrollment record for the
-        quiz's course (in which case timeliness can't be determined).
-        """
         if not quiz.duration_days:
             return None
 
-        enrollment = (
-            self.db.query(Enrollment)
-            .filter(
+        result = await self.db.execute(
+            select(Enrollment).where(
                 Enrollment.student_id == student_id,
                 Enrollment.course_id == quiz.course_id,
             )
-            .first()
         )
+        enrollment = result.scalar_one_or_none()
 
         if not enrollment:
             return None
 
         return enrollment.enrolled_at + timedelta(days=quiz.duration_days)
 
-    def submit(
+    async def submit(
         self,
         attempt_id: uuid.UUID,
     ) -> QuizAttempt:
 
-        attempt = self._get(attempt_id)
+        attempt = await self._get(attempt_id)
 
         if attempt.status == QuizAttemptStatus.COMPLETED:
             raise HTTPException(
@@ -153,7 +148,7 @@ class QuizAttemptService:
                 detail="Attempt already submitted",
             )
 
-        answers = self.attempt_repo.get_answers(attempt_id)
+        answers = await self.attempt_repo.get_answers(attempt_id)
 
         total = Decimal("0")
 
@@ -161,11 +156,10 @@ class QuizAttemptService:
             if answer.marks_obtained is not None:
                 total += answer.marks_obtained
 
-        quiz = (
-            self.db.query(Quiz)
-            .filter(Quiz.id == attempt.quiz_id)
-            .first()
+        result = await self.db.execute(
+            select(Quiz).where(Quiz.id == attempt.quiz_id)
         )
+        quiz = result.scalar_one_or_none()
 
         completed_at = datetime.now(timezone.utc)
 
@@ -174,7 +168,10 @@ class QuizAttemptService:
         attempt.completed_at = completed_at
 
         if quiz is not None:
-            deadline = self._resolve_deadline(quiz, attempt.student_id)
+            deadline = await self._resolve_deadline(
+                quiz,
+                attempt.student_id,
+            )
 
             if deadline is not None:
                 attempt.submission_status = (
@@ -183,17 +180,16 @@ class QuizAttemptService:
                     else SubmissionStatus.DELAYED
                 )
 
-        return self.attempt_repo.update(attempt)
+        return await self.attempt_repo.update(attempt)
 
-    def add_feedback(
+    async def add_feedback(
         self,
         attempt_id: uuid.UUID,
         feedback: str,
         instructor_id: uuid.UUID,
     ) -> QuizAttempt:
-        """Instructor feedback for a student's quiz attempt/submission."""
 
-        attempt = self._get(attempt_id)
+        attempt = await self._get(attempt_id)
 
         if attempt.status != QuizAttemptStatus.COMPLETED:
             raise HTTPException(
@@ -205,4 +201,4 @@ class QuizAttemptService:
         attempt.feedback_by = instructor_id
         attempt.feedback_at = datetime.now(timezone.utc)
 
-        return self.attempt_repo.update(attempt)
+        return await self.attempt_repo.update(attempt)
