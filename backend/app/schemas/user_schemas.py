@@ -37,7 +37,7 @@ class UserRoleUpdate(BaseModel):
 class UserOut(UserBase):
     """Shape returned to the client — never includes password_hash."""
     id: UUID
-    role_id: int
+    role: str
     is_active: bool
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
