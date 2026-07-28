@@ -2,11 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-<<<<<<< HEAD
-=======
 
 # Import all models so SQLAlchemy registers every mapper at startup
->>>>>>> 7a53e11b087b939cfe05c4955f28fbeec69ad83e
 import app.models  # noqa: F401
 
 
@@ -42,15 +39,11 @@ async def root():
     }
 
 
-<<<<<<< HEAD
-# --- Routers ---
-=======
 
 # ==================================================
 # ROUTERS
 # ==================================================
 
->>>>>>> 7a53e11b087b939cfe05c4955f28fbeec69ad83e
 from app.routes.auth_routes import router as auth_router
 from app.routes.role_routes import router as role_router
 from app.routes.user_routes import router as user_router
