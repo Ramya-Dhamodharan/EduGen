@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from typing import List
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.course import Course
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
@@ -11,12 +12,12 @@ from app.repositories.payment_repo import PaymentRepository
 
 
 class PaymentService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.payment_repo = PaymentRepository(db)
 
-    def _get(self, payment_id: uuid.UUID) -> Payment:
-        payment = self.payment_repo.get_by_id(payment_id)
+    async def _get(self, payment_id: uuid.UUID) -> Payment:
+        payment = await self.payment_repo.get_by_id(payment_id)
 
         if not payment:
             raise HTTPException(
@@ -26,21 +27,28 @@ class PaymentService:
 
         return payment
 
-    def list_all(self) -> List[Payment]:
-        return self.payment_repo.get_all()
+    async def list_all(self) -> List[Payment]:
+        return await self.payment_repo.get_all()
 
-    def get(self, payment_id: uuid.UUID) -> Payment:
-        return self._get(payment_id)
+    async def get(self, payment_id: uuid.UUID) -> Payment:
+        return await self._get(payment_id)
 
-    def list_for_student(self, student_id: uuid.UUID) -> List[Payment]:
-        return self.payment_repo.get_by_student_id(student_id)
+    async def list_for_student(
+        self,
+        student_id: uuid.UUID,
+    ) -> List[Payment]:
+        return await self.payment_repo.get_by_student_id(student_id)
 
-    def initiate(self, student_id: uuid.UUID, data) -> Payment:
-        course = (
-            self.db.query(Course)
-            .filter(Course.id == data.course_id)
-            .first()
+    async def initiate(
+        self,
+        student_id: uuid.UUID,
+        data,
+    ) -> Payment:
+
+        result = await self.db.execute(
+            select(Course).where(Course.id == data.course_id)
         )
+        course = result.scalar_one_or_none()
 
         if not course:
             raise HTTPException(
@@ -60,9 +68,9 @@ class PaymentService:
             created_by=student_id,
         )
 
-        return self.payment_repo.create(payment)
+        return await self.payment_repo.create(payment)
 
-    def update_status(
+    async def update_status(
         self,
         payment_id: uuid.UUID,
         new_status: str,
@@ -70,7 +78,7 @@ class PaymentService:
         receipt_url: str | None = None,
     ) -> Payment:
 
-        payment = self._get(payment_id)
+        payment = await self._get(payment_id)
 
         payment.payment_status = PaymentStatus(new_status)
 
@@ -86,16 +94,18 @@ class PaymentService:
         ):
             payment.payment_date = datetime.now(timezone.utc)
 
-        return self.payment_repo.update(payment)
+        return await self.payment_repo.update(payment)
 
-    def handle_webhook(
+    async def handle_webhook(
         self,
         transaction_id: str,
         new_status: str,
         receipt_url: str | None = None,
     ) -> Payment:
 
-        payment = self.payment_repo.get_by_transaction_id(transaction_id)
+        payment = await self.payment_repo.get_by_transaction_id(
+            transaction_id
+        )
 
         if not payment:
             raise HTTPException(
@@ -114,4 +124,4 @@ class PaymentService:
         ):
             payment.payment_date = datetime.now(timezone.utc)
 
-        return self.payment_repo.update(payment)
+        return await self.payment_repo.update(payment)

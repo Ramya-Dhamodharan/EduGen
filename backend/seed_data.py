@@ -1,83 +1,76 @@
 """
-Seed the database with the three roles and one test user per role.
+Simple database seeding script.
+Creates the 3 roles (admin, student, instructor) and one admin user.
 
-Run from the project root (where app/ lives):
+Run with: python -m app.seed.seed_data
 
-    uv run python seed.py
-    # or:  python seed.py
-
-Safe to re-run: existing rows are reused, not duplicated.
+Safe to run multiple times — checks before inserting, won't create duplicates.
 """
 
+import asyncio
+
+from sqlalchemy import select
+
+from app.core.security import hash_password
 from app.db.database import SessionLocal
-import app.models  # registers every mapper
 from app.models.role import Role
 from app.models.user import User
-from app.core.security import hash_password
-
-ROLES = ["Admin", "Instructor", "Student"]
-
-USERS = [
-    # (username,        email,                     password,        role)
-    ("admin",      "admin@edugen.com",      "Admin@12345",      "Admin"),
-    ("instructor", "instructor@edugen.com", "Instructor@12345", "Instructor"),
-    ("student",    "student@edugen.com",    "Student@12345",    "Student"),
-]
 
 
-def main() -> None:
-    db = SessionLocal()
-    try:
-        # ---- roles ----
-        role_map = {}
-        for name in ROLES:
-            role = db.query(Role).filter(Role.name == name).first()
+async def run():
+    async with SessionLocal() as db:
+        # ---------- Roles ----------
+        role_names = ["admin", "student", "instructor"]
+        roles = {}
+
+        for name in role_names:
+            result = await db.execute(
+                select(Role).where(Role.name == name)
+            )
+            role = result.scalar_one_or_none()
+
             if not role:
                 role = Role(name=name)
                 db.add(role)
-                db.flush()
-                print(f"  + created role {name} (id={role.id})")
+
+                await db.commit()
+                await db.refresh(role)
+
+                print(f"Created role: {name}")
             else:
-                print(f"  = role {name} already exists (id={role.id})")
-            role_map[name] = role
+                print(f"Role already exists, skipping: {name}")
 
-        # ---- users ----
-        for username, email, password, role_name in USERS:
-            user = db.query(User).filter(User.email == email).first()
-            if user:
-                # keep the role correct even if the user already existed
-                user.role_id = role_map[role_name].id
-                print(f"  = user {email} already exists -> role set to {role_name}")
-                continue
+            roles[name] = role
 
-            user = User(
-                username=username,
-                email=email,
-                password_hash=hash_password(password),
-                role_id=role_map[role_name].id,
+        # ---------- Admin user ----------
+        result = await db.execute(
+            select(User).where(User.email == "admin@edugen.com")
+        )
+        admin_user = result.scalar_one_or_none()
+
+        if not admin_user:
+            admin_user = User(
+                username="admin",
+                email="admin@edugen.com",
+                password_hash=hash_password("Admin@123"),
+                role_id=roles["admin"].id,
                 is_active=True,
             )
-            db.add(user)
-            db.flush()
-            # self-referencing audit column
-            user.created_by = user.id
-            print(f"  + created {role_name}: {email} / {password}")
 
-        db.commit()
+            db.add(admin_user)
 
-        print("\nSeed complete. Login credentials:")
-        for username, email, password, role_name in USERS:
-            print(f"  {role_name:<11} {email:<26} {password}")
-        print("\nRole ids (needed for POST /api/users):")
-        for name, role in role_map.items():
-            print(f"  {name:<11} role_id = {role.id}")
+            await db.commit()
+            await db.refresh(admin_user)
 
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
+            print(f"Created admin user: {admin_user.email}")
+        else:
+            print("Admin user already exists, skipping")
+
+        print("\n✅ Seeding complete.")
+        print(
+            f"   admin login -> email: {admin_user.email}  password: Admin@123"
+        )
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(run())

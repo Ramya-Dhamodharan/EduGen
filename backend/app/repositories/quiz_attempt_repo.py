@@ -1,23 +1,28 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.quiz_attempt import QuizAttempt, QuizAttemptStatus
 from app.models.quiz_answer import QuizAnswer
+from app.models.quiz_attempt import QuizAttempt, QuizAttemptStatus
 
 
 class QuizAttemptRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_by_id(self, attempt_id: uuid.UUID) -> QuizAttempt | None:
-        return (
-            self.db.query(QuizAttempt)
-            .filter(QuizAttempt.id == attempt_id)
-            .first()
+    async def get_by_id(
+        self,
+        attempt_id: uuid.UUID,
+    ) -> QuizAttempt | None:
+        result = await self.db.execute(
+            select(QuizAttempt).where(
+                QuizAttempt.id == attempt_id
+            )
         )
+        return result.scalar_one_or_none()
 
-    def get_in_progress_for_quiz(
+    async def get_in_progress_for_quiz(
         self,
         student_id: uuid.UUID,
         quiz_id: uuid.UUID,
@@ -26,71 +31,95 @@ class QuizAttemptRepository:
 
         Used to resume a quiz instead of starting a duplicate attempt.
         """
-        return (
-            self.db.query(QuizAttempt)
-            .filter(
+        result = await self.db.execute(
+            select(QuizAttempt)
+            .where(
                 QuizAttempt.student_id == student_id,
                 QuizAttempt.quiz_id == quiz_id,
                 QuizAttempt.status == QuizAttemptStatus.IN_PROGRESS,
             )
             .order_by(QuizAttempt.started_at.desc())
-            .first()
         )
+        return result.scalar_one_or_none()
 
-    def get_in_progress_for_student(
+    async def get_in_progress_for_student(
         self,
         student_id: uuid.UUID,
         quiz_id: uuid.UUID | None = None,
     ) -> list[QuizAttempt]:
-        """All of a student's unfinished attempts (optionally for one quiz).
+        """All of a student's unfinished attempts (optionally for one quiz)."""
 
-        Lets the frontend show a "continue where you left off" list, e.g.
-        after logging back in on the same account.
-        """
-        query = self.db.query(QuizAttempt).filter(
-            QuizAttempt.student_id == student_id,
-            QuizAttempt.status == QuizAttemptStatus.IN_PROGRESS,
+        stmt = (
+            select(QuizAttempt)
+            .where(
+                QuizAttempt.student_id == student_id,
+                QuizAttempt.status == QuizAttemptStatus.IN_PROGRESS,
+            )
         )
 
         if quiz_id is not None:
-            query = query.filter(QuizAttempt.quiz_id == quiz_id)
+            stmt = stmt.where(
+                QuizAttempt.quiz_id == quiz_id
+            )
 
-        return query.order_by(QuizAttempt.started_at.desc()).all()
+        stmt = stmt.order_by(
+            QuizAttempt.started_at.desc()
+        )
 
-    def get_all(self) -> list[QuizAttempt]:
-        return self.db.query(QuizAttempt).all()
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
 
-    def get_by_student_id(
+    async def get_all(self) -> list[QuizAttempt]:
+        result = await self.db.execute(
+            select(QuizAttempt)
+        )
+        return result.scalars().all()
+
+    async def get_by_student_id(
         self,
         student_id: uuid.UUID,
     ) -> list[QuizAttempt]:
-        return (
-            self.db.query(QuizAttempt)
-            .filter(QuizAttempt.student_id == student_id)
-            .all()
+        result = await self.db.execute(
+            select(QuizAttempt).where(
+                QuizAttempt.student_id == student_id
+            )
         )
+        return result.scalars().all()
 
-    def get_answers(
+    async def get_answers(
         self,
         attempt_id: uuid.UUID,
     ) -> list[QuizAnswer]:
-        return (
-            self.db.query(QuizAnswer)
-            .filter(QuizAnswer.attempt_id == attempt_id)
-            .all()
+        result = await self.db.execute(
+            select(QuizAnswer).where(
+                QuizAnswer.attempt_id == attempt_id
+            )
         )
+        return result.scalars().all()
 
-    def create(self, attempt: QuizAttempt) -> QuizAttempt:
+    async def create(
+        self,
+        attempt: QuizAttempt,
+    ) -> QuizAttempt:
         self.db.add(attempt)
-        self.db.commit()
-        self.db.refresh(attempt)
+
+        await self.db.commit()
+        await self.db.refresh(attempt)
+
         return attempt
 
-    def update(self, attempt: QuizAttempt) -> QuizAttempt:
-        self.db.commit()
-        self.db.refresh(attempt)
+    async def update(
+        self,
+        attempt: QuizAttempt,
+    ) -> QuizAttempt:
+        await self.db.commit()
+        await self.db.refresh(attempt)
+
         return attempt
 
-    def delete(self, attempt: QuizAttempt) -> None:
-        self.db.delete(attempt)
-        self.db.commit()
+    async def delete(
+        self,
+        attempt: QuizAttempt,
+    ) -> None:
+        await self.db.delete(attempt)
+        await self.db.commit()

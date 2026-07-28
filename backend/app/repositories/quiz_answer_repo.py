@@ -1,35 +1,55 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quiz_answer import QuizAnswer
 
 
 class QuizAnswerRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_by_id(self, answer_id: uuid.UUID) -> QuizAnswer | None:
-        return (
-            self.db.query(QuizAnswer)
-            .filter(QuizAnswer.id == answer_id)
-            .first()
+    async def get_by_id(
+        self,
+        answer_id: uuid.UUID,
+    ) -> QuizAnswer | None:
+        result = await self.db.execute(
+            select(QuizAnswer).where(
+                QuizAnswer.id == answer_id
+            )
         )
+        return result.scalar_one_or_none()
 
-    def get_all(self) -> list[QuizAnswer]:
-        return self.db.query(QuizAnswer).all()
+    async def get_all(self) -> list[QuizAnswer]:
+        result = await self.db.execute(
+            select(QuizAnswer)
+        )
+        return result.scalars().all()
 
-    def create(self, answer: QuizAnswer) -> QuizAnswer:
+    async def create(
+        self,
+        answer: QuizAnswer,
+    ) -> QuizAnswer:
         self.db.add(answer)
-        self.db.commit()
-        self.db.refresh(answer)
+
+        await self.db.commit()
+        await self.db.refresh(answer)
+
         return answer
 
-    def update(self, answer: QuizAnswer) -> QuizAnswer:
-        self.db.commit()
-        self.db.refresh(answer)
+    async def update(
+        self,
+        answer: QuizAnswer,
+    ) -> QuizAnswer:
+        await self.db.commit()
+        await self.db.refresh(answer)
+
         return answer
 
-    def delete(self, answer: QuizAnswer) -> None:
-        self.db.delete(answer)
-        self.db.commit()
+    async def delete(
+        self,
+        answer: QuizAnswer,
+    ) -> None:
+        await self.db.delete(answer)
+        await self.db.commit()
