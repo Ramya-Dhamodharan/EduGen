@@ -95,8 +95,6 @@ class AuthService:
 
     # ---------- Refresh ----------
     async def refresh(self, refresh_token: str | None) -> str:
-        """Validates the refresh cookie and returns a new access token."""
-
         if not refresh_token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -116,17 +114,20 @@ class AuthService:
                     detail="Invalid token scope",
                 )
 
+            user_id = payload.get("sub")
+            if user_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid refresh token",
+                )
+
         except JWTError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired refresh token",
             )
 
-        result = await self.db.execute(
-            select(User).where(User.id == payload.get("sub"))
-        )
-
-        user = result.scalar_one_or_none()
+        user = await self.users.get_by_id(user_id)
 
         if not user or not user.is_active:
             raise HTTPException(

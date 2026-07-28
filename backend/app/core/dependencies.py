@@ -3,6 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.db.database import get_db
@@ -15,33 +16,49 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Decode the Bearer access token and load the active user."""
     unauthorized = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
     if credentials is None:
         raise unauthorized
+
     try:
-        payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+
         if payload.get("type") != "access":
             raise unauthorized
+
         user_id = payload.get("sub")
         if user_id is None:
             raise unauthorized
+
     except JWTError:
         raise unauthorized
 
     result = await db.execute(
-        select(User).where(User.id == user_id)
+        select(User)
+        .options(selectinload(User.role))
+        .where(User.id == user_id)
     )
-    user = result.scalar_one_or_none()  
-      
+
+    user = result.scalar_one_or_none()
+
     if user is None:
         raise unauthorized
+
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated",
+        )
+
     return user
 
 
@@ -58,16 +75,6 @@ class RoleChecker:
                 detail="You do not have permission to access this resource",
             )
         return current_user
-
-
-# ==========================
-# Reusable permission presets
-# Import these directly instead of re-instantiating RoleChecker everywhere,
-# so the whole app shares one consistent definition of each policy.
-#
-#   from app.core.dependencies import require_admin, require_staff
-#   router = APIRouter(dependencies=[Depends(require_admin)])
-# ==========================
 
 # Admin only.
 require_admin = RoleChecker(["Admin"])
