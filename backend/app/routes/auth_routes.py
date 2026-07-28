@@ -68,4 +68,4 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
 @router.get("/me", response_model=UserOut)
 def get_me(current_user: User = Depends(get_current_user)):
     """Return the currently authenticated user. Any logged-in role."""
-    return current_user
+    return current_user 

@@ -46,7 +46,7 @@ class Category(Base):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        comment="Primary key of the category.",
+        comment="Primary key of the category.", 
     )
 
     name: Mapped[str] = mapped_column(

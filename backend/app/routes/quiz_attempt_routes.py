@@ -59,13 +59,15 @@ def get_attempt(attempt_id: uuid.UUID, db: Session = Depends(get_db),
     a = QuizAttemptService(db).get(attempt_id)
     _ensure_owner_or_staff(current_user, a.student_id)
     return a
-
+  
 
 # ---- Student starts their own attempt (or resumes an unfinished one) ----
 # Safe to call every time a student opens the quiz - if they already have an
 # IN_PROGRESS attempt for this quiz it's returned unchanged instead of a new
 # one being created, which is what makes closing the tab, refreshing, losing
 # connection, or logging in again all resumable.
+
+
 @router.post("", response_model=QuizAttemptOut, status_code=status.HTTP_201_CREATED)
 def start_attempt(payload: QuizAttemptCreate, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
@@ -73,6 +75,7 @@ def start_attempt(payload: QuizAttemptCreate, db: Session = Depends(get_db),
 
 
 # ---- Owner or staff: update ----
+
 @router.put("/{attempt_id}", response_model=QuizAttemptOut)
 def update_attempt(attempt_id: uuid.UUID, payload: QuizAttemptUpdate, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_user)):
@@ -82,6 +85,7 @@ def update_attempt(attempt_id: uuid.UUID, payload: QuizAttemptUpdate, db: Sessio
 
 
 # ---- Owner or staff: submit & score ----
+
 @router.patch("/{attempt_id}/submit", response_model=QuizAttemptOut)
 def submit_attempt(attempt_id: uuid.UUID, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_user)):
@@ -91,6 +95,7 @@ def submit_attempt(attempt_id: uuid.UUID, db: Session = Depends(get_db),
 
 
 # ---- Staff: give instructor feedback on a submitted attempt ----
+
 @router.patch("/{attempt_id}/feedback", response_model=QuizAttemptOut,
               dependencies=[Depends(require_staff)])
 def give_attempt_feedback(attempt_id: uuid.UUID, payload: QuizAttemptFeedback,
@@ -100,6 +105,7 @@ def give_attempt_feedback(attempt_id: uuid.UUID, payload: QuizAttemptFeedback,
 
 
 # ---- Owner or staff: list answers for an attempt ----
+
 @router.get("/{attempt_id}/answers", response_model=List[QuizAnswerOut])
 def list_attempt_answers(attempt_id: uuid.UUID, db: Session = Depends(get_db),
                          current_user: User = Depends(get_current_user)):
@@ -109,6 +115,7 @@ def list_attempt_answers(attempt_id: uuid.UUID, db: Session = Depends(get_db),
 
 
 # ---- Nested: submit an answer under an attempt (owner or staff) ----
+
 @router.post("/{attempt_id}/answers", response_model=QuizAnswerOut, status_code=status.HTTP_201_CREATED)
 def submit_answer_under_attempt(
     attempt_id: uuid.UUID,
