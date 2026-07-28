@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -13,6 +14,7 @@ from app.core.security import (
     verify_otp,
 )
 from app.models.user import User
+from app.schemas.user_schemas import UserOut
 from app.repositories.role_repo import RoleRepository
 from app.repositories.user_repo import UserRepository
 from app.schemas.auth_schemas import (
@@ -37,7 +39,7 @@ class AuthService:
         self.roles = RoleRepository(db)
 
     # ---------- Register ----------
-    async def register(self, data: RegisterRequest) -> User:
+    async def register(self, data: RegisterRequest) -> UserOut:
         if await self.users.get_by_email(data.email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -61,9 +63,24 @@ class AuthService:
 
         self.db.add(user)
         await self.db.commit()
-        await self.db.refresh(user)
 
-        return user
+        result = await self.db.execute(
+            select(User)
+            .options(selectinload(User.role))
+            .where(User.id == user.id)
+        )
+
+        user = result.scalar_one()
+
+        return UserOut(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            role=user.role.name,
+            is_active=user.is_active,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+        )
 
     # ---------- Login ----------
     async def login(self, data: LoginRequest) -> tuple[str, str]:
