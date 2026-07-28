@@ -186,7 +186,6 @@ async def list_enrollments_for_course(
             "id": e.id,
             "student_id": e.student_id,
             "status": e.status,
-            "progress": e.progress,
         }
         for e in enrollments
     ]

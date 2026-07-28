@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.quiz_answer import QuizAnswer
 
@@ -15,7 +16,11 @@ class QuizAnswerRepository:
         answer_id: uuid.UUID,
     ) -> QuizAnswer | None:
         result = await self.db.execute(
-            select(QuizAnswer).where(
+            select(QuizAnswer)
+            .options(
+                joinedload(QuizAnswer.attempt)
+            )
+            .where(
                 QuizAnswer.id == answer_id
             )
         )
@@ -23,7 +28,10 @@ class QuizAnswerRepository:
 
     async def get_all(self) -> list[QuizAnswer]:
         result = await self.db.execute(
-            select(QuizAnswer)
+            select(QuizAnswer).options(
+                joinedload(QuizAnswer.attempt),
+                joinedload(QuizAnswer.question),
+            )
         )
         return result.scalars().all()
 
