@@ -1,7 +1,8 @@
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.certificate import Certificate
 from app.models.course import Course
@@ -11,12 +12,12 @@ from app.schemas.certificate_schemas import CertificateCreate
 
 
 class CertificateService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.certificate_repo = CertificateRepository(db)
 
-    def _get(self, certificate_id: uuid.UUID) -> Certificate:
-        certificate = self.certificate_repo.get_by_id(certificate_id)
+    async def _get(self, certificate_id: uuid.UUID) -> Certificate:
+        certificate = await self.certificate_repo.get_by_id(certificate_id)
 
         if not certificate:
             raise HTTPException(
@@ -26,24 +27,25 @@ class CertificateService:
 
         return certificate
 
-    def list_all(self):
-        return self.certificate_repo.get_all()
+    async def list_all(self):
+        return await self.certificate_repo.get_all()
 
-    def get(self, certificate_id: uuid.UUID):
-        return self._get(certificate_id)
+    async def get(self, certificate_id: uuid.UUID):
+        return await self._get(certificate_id)
 
-    def list_for_student(self, student_id: uuid.UUID):
-        return self.certificate_repo.get_by_student_id(student_id)
+    async def list_for_student(self, student_id: uuid.UUID):
+        return await self.certificate_repo.get_by_student_id(student_id)
 
-    def verify(self, certificate_number: str):
-        return self.certificate_repo.get_by_certificate_number(certificate_number)
-
-    def issue(self, data: CertificateCreate):
-        student = (
-            self.db.query(User)
-            .filter(User.id == data.student_id)
-            .first()
+    async def verify(self, certificate_number: str):
+        return await self.certificate_repo.get_by_certificate_number(
+            certificate_number
         )
+
+    async def issue(self, data: CertificateCreate):
+        result = await self.db.execute(
+            select(User).where(User.id == data.student_id)
+        )
+        student = result.scalar_one_or_none()
 
         if not student:
             raise HTTPException(
@@ -51,11 +53,10 @@ class CertificateService:
                 detail=f"Student {data.student_id} does not exist",
             )
 
-        course = (
-            self.db.query(Course)
-            .filter(Course.id == data.course_id)
-            .first()
+        result = await self.db.execute(
+            select(Course).where(Course.id == data.course_id)
         )
+        course = result.scalar_one_or_none()
 
         if not course:
             raise HTTPException(
@@ -63,7 +64,7 @@ class CertificateService:
                 detail=f"Course {data.course_id} does not exist",
             )
 
-        existing = self.certificate_repo.get_by_certificate_number(
+        existing = await self.certificate_repo.get_by_certificate_number(
             data.certificate_number
         )
 
@@ -80,8 +81,8 @@ class CertificateService:
             certificate_url=data.certificate_url,
         )
 
-        return self.certificate_repo.create(certificate)
+        return await self.certificate_repo.create(certificate)
 
-    def delete(self, certificate_id: uuid.UUID):
-        certificate = self._get(certificate_id)
-        self.certificate_repo.delete(certificate)
+    async def delete(self, certificate_id: uuid.UUID):
+        certificate = await self._get(certificate_id)
+        await self.certificate_repo.delete(certificate)

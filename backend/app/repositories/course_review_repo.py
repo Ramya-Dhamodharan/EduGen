@@ -1,56 +1,76 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.course_review import CourseReview
 
 
 class CourseReviewRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_by_id(self, review_id: uuid.UUID) -> CourseReview | None:
-        return (
-            self.db.query(CourseReview)
-            .filter(CourseReview.id == review_id)
-            .first()
+    async def get_by_id(
+        self,
+        review_id: uuid.UUID,
+    ) -> CourseReview | None:
+        result = await self.db.execute(
+            select(CourseReview).where(
+                CourseReview.id == review_id
+            )
         )
+        return result.scalar_one_or_none()
 
-    def get_all(self) -> list[CourseReview]:
-        return self.db.query(CourseReview).all()
-
-    def get_by_course_id(self, course_id: uuid.UUID) -> list[CourseReview]:
-        return (
-            self.db.query(CourseReview)
-            .filter(CourseReview.course_id == course_id)
-            .all()
+    async def get_all(self) -> list[CourseReview]:
+        result = await self.db.execute(
+            select(CourseReview)
         )
+        return result.scalars().all()
 
-    def get_by_course_and_student(
+    async def get_by_course_id(
+        self,
+        course_id: uuid.UUID,
+    ) -> list[CourseReview]:
+        result = await self.db.execute(
+            select(CourseReview).where(
+                CourseReview.course_id == course_id
+            )
+        )
+        return result.scalars().all()
+
+    async def get_by_course_and_student(
         self,
         course_id: uuid.UUID,
         student_id: uuid.UUID,
     ) -> CourseReview | None:
-        return (
-            self.db.query(CourseReview)
-            .filter(
+        result = await self.db.execute(
+            select(CourseReview).where(
                 CourseReview.course_id == course_id,
                 CourseReview.student_id == student_id,
             )
-            .first()
         )
+        return result.scalar_one_or_none()
 
-    def create(self, review: CourseReview) -> CourseReview:
+    async def create(
+        self,
+        review: CourseReview,
+    ) -> CourseReview:
         self.db.add(review)
-        self.db.commit()
-        self.db.refresh(review)
+        await self.db.commit()
+        await self.db.refresh(review)
         return review
 
-    def update(self, review: CourseReview) -> CourseReview:
-        self.db.commit()
-        self.db.refresh(review)
+    async def update(
+        self,
+        review: CourseReview,
+    ) -> CourseReview:
+        await self.db.commit()
+        await self.db.refresh(review)
         return review
 
-    def delete(self, review: CourseReview) -> None:
-        self.db.delete(review)
-        self.db.commit()
+    async def delete(
+        self,
+        review: CourseReview,
+    ) -> None:
+        await self.db.delete(review)
+        await self.db.commit()

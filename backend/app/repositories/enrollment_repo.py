@@ -1,56 +1,79 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enrollment import Enrollment
 
 
 class EnrollmentRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_by_id(self, enrollment_id: uuid.UUID) -> Enrollment | None:
-        return (
-            self.db.query(Enrollment)
-            .filter(Enrollment.id == enrollment_id)
-            .first()
+    async def get_by_id(
+        self,
+        enrollment_id: uuid.UUID,
+    ) -> Enrollment | None:
+        result = await self.db.execute(
+            select(Enrollment).where(
+                Enrollment.id == enrollment_id
+            )
         )
+        return result.scalar_one_or_none()
 
-    def get_all(self) -> list[Enrollment]:
-        return self.db.query(Enrollment).all()
-
-    def get_by_student_id(self, student_id: uuid.UUID) -> list[Enrollment]:
-        return (
-            self.db.query(Enrollment)
-            .filter(Enrollment.student_id == student_id)
-            .all()
+    async def get_all(self) -> list[Enrollment]:
+        result = await self.db.execute(
+            select(Enrollment)
         )
+        return result.scalars().all()
 
-    def get_by_student_and_course(
+    async def get_by_student_id(
+        self,
+        student_id: uuid.UUID,
+    ) -> list[Enrollment]:
+        result = await self.db.execute(
+            select(Enrollment).where(
+                Enrollment.student_id == student_id
+            )
+        )
+        return result.scalars().all()
+
+    async def get_by_student_and_course(
         self,
         student_id: uuid.UUID,
         course_id: uuid.UUID,
     ) -> Enrollment | None:
-        return (
-            self.db.query(Enrollment)
-            .filter(
+        result = await self.db.execute(
+            select(Enrollment).where(
                 Enrollment.student_id == student_id,
                 Enrollment.course_id == course_id,
             )
-            .first()
         )
+        return result.scalar_one_or_none()
 
-    def create(self, enrollment: Enrollment) -> Enrollment:
+    async def create(
+        self,
+        enrollment: Enrollment,
+    ) -> Enrollment:
         self.db.add(enrollment)
-        self.db.commit()
-        self.db.refresh(enrollment)
+
+        await self.db.commit()
+        await self.db.refresh(enrollment)
+
         return enrollment
 
-    def update(self, enrollment: Enrollment) -> Enrollment:
-        self.db.commit()
-        self.db.refresh(enrollment)
+    async def update(
+        self,
+        enrollment: Enrollment,
+    ) -> Enrollment:
+        await self.db.commit()
+        await self.db.refresh(enrollment)
+
         return enrollment
 
-    def delete(self, enrollment: Enrollment) -> None:
-        self.db.delete(enrollment)
-        self.db.commit()
+    async def delete(
+        self,
+        enrollment: Enrollment,
+    ) -> None:
+        await self.db.delete(enrollment)
+        await self.db.commit()

@@ -1,35 +1,55 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quiz_question import QuizQuestion
 
 
 class QuizQuestionRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_by_id(self, question_id: uuid.UUID) -> QuizQuestion | None:
-        return (
-            self.db.query(QuizQuestion)
-            .filter(QuizQuestion.id == question_id)
-            .first()
+    async def get_by_id(
+        self,
+        question_id: uuid.UUID,
+    ) -> QuizQuestion | None:
+        result = await self.db.execute(
+            select(QuizQuestion).where(
+                QuizQuestion.id == question_id
+            )
         )
+        return result.scalar_one_or_none()
 
-    def get_all(self) -> list[QuizQuestion]:
-        return self.db.query(QuizQuestion).all()
+    async def get_all(self) -> list[QuizQuestion]:
+        result = await self.db.execute(
+            select(QuizQuestion)
+        )
+        return result.scalars().all()
 
-    def create(self, question: QuizQuestion) -> QuizQuestion:
+    async def create(
+        self,
+        question: QuizQuestion,
+    ) -> QuizQuestion:
         self.db.add(question)
-        self.db.commit()
-        self.db.refresh(question)
+
+        await self.db.commit()
+        await self.db.refresh(question)
+
         return question
 
-    def update(self, question: QuizQuestion) -> QuizQuestion:
-        self.db.commit()
-        self.db.refresh(question)
+    async def update(
+        self,
+        question: QuizQuestion,
+    ) -> QuizQuestion:
+        await self.db.commit()
+        await self.db.refresh(question)
+
         return question
 
-    def delete(self, question: QuizQuestion) -> None:
-        self.db.delete(question)
-        self.db.commit()
+    async def delete(
+        self,
+        question: QuizQuestion,
+    ) -> None:
+        await self.db.delete(question)
+        await self.db.commit()
