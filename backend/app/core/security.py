@@ -14,11 +14,7 @@ from app.core.config import settings
 # ==========================
 
 def _to_bcrypt_bytes(password: str) -> bytes:
-<<<<<<< HEAD
-    return password.encode("utf-8")
-=======
     return password.encode("utf-8")[:72]
->>>>>>> 7a53e11b087b939cfe05c4955f28fbeec69ad83e
 
 
 def hash_password(password: str) -> str:
