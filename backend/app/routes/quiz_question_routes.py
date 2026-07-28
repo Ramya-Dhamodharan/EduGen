@@ -6,7 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
 from app.models.user import User
-from app.core.dependencies import get_current_user, require_staff, require_user
+from app.core.dependencies import (
+    get_current_user,
+    require_instructor,
+    require_non_admin,
+)
 from app.schemas.quiz_question_schemas import (
     QuizQuestionCreate,
     QuizQuestionUpdate,
@@ -15,9 +19,9 @@ from app.schemas.quiz_question_schemas import (
 )
 from app.services.quiz_question_service import QuizQuestionService
 
-# Reads (without the correct answer) open to any logged-in user;
-# writes are staff-only per-endpoint.
-router = APIRouter(dependencies=[Depends(require_user)])
+# Reads (without the correct answer) open to Instructor/Student;
+# writes are Instructor-only.
+router = APIRouter(dependencies=[Depends(require_non_admin)])
 
 
 @router.get("", response_model=List[QuizQuestionOut])
@@ -39,7 +43,7 @@ async def get_quiz_question(
     "",
     response_model=QuizQuestionWithAnswerOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def create_quiz_question(
     payload: QuizQuestionCreate,
@@ -55,7 +59,7 @@ async def create_quiz_question(
 @router.put(
     "/{question_id}",
     response_model=QuizQuestionWithAnswerOut,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def update_quiz_question(
     question_id: uuid.UUID,
@@ -71,7 +75,7 @@ async def update_quiz_question(
 @router.delete(
     "/{question_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def delete_quiz_question(
     question_id: uuid.UUID,

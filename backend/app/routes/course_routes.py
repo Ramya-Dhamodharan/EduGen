@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import require_staff, require_user
+from app.core.dependencies import require_instructor, require_non_admin
 from app.db.database import get_db
 from app.schemas.course_schemas import (
     CourseCreate,
@@ -16,9 +16,9 @@ from app.schemas.module_schemas import ModuleCreate, ModuleOut
 from app.services.course_service import CourseService
 from app.services.module_service import ModuleService
 
-# Reads are open to any logged-in user (students browse the catalog).
-# Writes are restricted to staff (Admin or Instructor) per-endpoint below.
-router = APIRouter(dependencies=[Depends(require_user)])
+# Reads are open to Instructor/Student (catalog browsing). Writes are
+# Instructor-only per-endpoint below.
+router = APIRouter(dependencies=[Depends(require_non_admin)])
 
 
 @router.get("/search", response_model=List[CourseOut])
@@ -56,7 +56,7 @@ async def get_course(
     "",
     response_model=CourseOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def create_course(
     payload: CourseCreate,
@@ -68,7 +68,7 @@ async def create_course(
 @router.put(
     "/{course_id}",
     response_model=CourseOut,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def update_course(
     course_id: uuid.UUID,
@@ -84,7 +84,7 @@ async def update_course(
 @router.patch(
     "/{course_id}/status",
     response_model=CourseOut,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def update_course_status(
     course_id: uuid.UUID,
@@ -100,7 +100,7 @@ async def update_course_status(
 @router.delete(
     "/{course_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def delete_course(
     course_id: uuid.UUID,
@@ -121,7 +121,7 @@ async def list_modules_in_course(
     "/{course_id}/modules",
     response_model=ModuleOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def create_module_under_course(
     course_id: uuid.UUID,
@@ -173,7 +173,7 @@ async def list_quizzes_for_course(
 
 @router.get(
     "/{course_id}/enrollments",
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def list_enrollments_for_course(
     course_id: uuid.UUID,
