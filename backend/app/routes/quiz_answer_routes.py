@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_user, require_staff
+from app.core.dependencies import get_current_user, require_instructor, require_student
 from app.db.database import get_db
 from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
@@ -19,8 +19,8 @@ from app.services.quiz_answer_service import QuizAnswerService
 router = APIRouter()
 
 
-def _is_staff(user: User) -> bool:
-    return user.role.name.lower() in ("admin", "instructor")
+def _is_instructor(user: User) -> bool:
+    return user.role.name.lower() == "instructor"
 
 
 async def _owner_of_answer(
@@ -34,11 +34,11 @@ async def _owner_of_answer(
     return attempt.student_id if attempt else None
 
 
-# ---- Staff: list all answers ----
+# ---- Instructor only: list all answers (for grading/review) ----
 @router.get(
     "",
     response_model=List[QuizAnswerOut],
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def list_answers(
     db: AsyncSession = Depends(get_db),
@@ -46,7 +46,7 @@ async def list_answers(
     return await QuizAnswerService(db).list_all()
 
 
-# ---- Owner or staff: view one ----
+# ---- Owner (student) or Instructor: view one ----
 @router.get("/{answer_id}", response_model=QuizAnswerOut)
 async def get_answer(
     answer_id: uuid.UUID,
@@ -60,7 +60,7 @@ async def get_answer(
         answer.attempt_id,
     )
 
-    if not _is_staff(current_user) and current_user.id != owner:
+    if not _is_instructor(current_user) and current_user.id != owner:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
             "You do not have permission to access this resource",
@@ -69,11 +69,14 @@ async def get_answer(
     return answer
 
 
-# ---- Student submits their own answer ----
+# ---- Student only: submits their own answer ----
+# Taking a quiz is the Student's job - Admin and Instructor never submit
+# answers, even for their own attempt (they can't own a quiz attempt).
 @router.post(
     "",
     response_model=QuizAnswerOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_student)],
 )
 async def submit_answer(
     payload: QuizAnswerCreate,
@@ -91,7 +94,7 @@ async def submit_answer(
             f"Attempt {payload.attempt_id} does not exist",
         )
 
-    if not _is_staff(current_user) and current_user.id != owner:
+    if current_user.id != owner:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
             "You can only submit answers for your own attempt",
@@ -105,8 +108,8 @@ async def submit_answer(
     )
 
 
-# ---- Owner or staff: update an answer ----
-@router.put("/{answer_id}", response_model=QuizAnswerOut)
+# ---- Owner (student) only: update their own answer ----
+@router.put("/{answer_id}", response_model=QuizAnswerOut, dependencies=[Depends(require_student)])
 async def update_answer(
     answer_id: uuid.UUID,
     payload: QuizAnswerUpdate,
@@ -120,7 +123,7 @@ async def update_answer(
         answer.attempt_id,
     )
 
-    if not _is_staff(current_user) and current_user.id != owner:
+    if current_user.id != owner:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
             "You do not have permission to access this resource",

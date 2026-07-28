@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_user, require_staff
+from app.core.dependencies import get_current_user, require_instructor, require_student
 from app.db.database import get_db
 from app.models.user import User
 from app.schemas.payment_schemas import (
@@ -19,12 +19,14 @@ from app.services.payment_service import PaymentService
 router = APIRouter()
 
 
-def _is_staff(user: User) -> bool:
-    return user.role.name.lower() in ("admin", "instructor")
+def _is_instructor(user: User) -> bool:
+    return user.role.name.lower() == "instructor"
 
 
-def _ensure_owner_or_staff(user: User, owner_id: uuid.UUID) -> None:
-    if _is_staff(user) or user.id == owner_id:
+def _ensure_owner_or_instructor(user: User, owner_id: uuid.UUID) -> None:
+    """A payment is the student's own record, or Instructor's to oversee.
+    Admin has no business here - its job is users/roles only."""
+    if _is_instructor(user) or user.id == owner_id:
         return
     raise HTTPException(
         status.HTTP_403_FORBIDDEN,
@@ -46,11 +48,11 @@ async def payment_webhook(
     return {"received": True}
 
 
-# ---- Staff: list all ----
+# ---- Instructor only: list all ----
 @router.get(
     "",
     response_model=List[PaymentOut],
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def list_payments(
     db: AsyncSession = Depends(get_db),
@@ -58,7 +60,7 @@ async def list_payments(
     return await PaymentService(db).list_all()
 
 
-# ---- Owner or staff: view one ----
+# ---- Owner (student) or Instructor: view one ----
 @router.get("/{payment_id}", response_model=PaymentOut)
 async def get_payment(
     payment_id: uuid.UUID,
@@ -67,7 +69,7 @@ async def get_payment(
 ):
     payment = await PaymentService(db).get(payment_id)
 
-    _ensure_owner_or_staff(
+    _ensure_owner_or_instructor(
         current_user,
         payment.student_id,
     )
@@ -75,11 +77,12 @@ async def get_payment(
     return payment
 
 
-# ---- Student initiates their own payment ----
+# ---- Student only: initiates their own payment ----
 @router.post(
     "",
     response_model=PaymentOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_student)],
 )
 async def initiate_payment(
     payload: PaymentCreate,
@@ -107,7 +110,7 @@ async def update_payment_status(
     )
 
 
-# ---- Owner or staff: receipt ----
+# ---- Owner (student) or Instructor: receipt ----
 @router.get("/{payment_id}/receipt", response_model=ReceiptOut)
 async def get_receipt(
     payment_id: uuid.UUID,
@@ -116,7 +119,7 @@ async def get_receipt(
 ):
     payment = await PaymentService(db).get(payment_id)
 
-    _ensure_owner_or_staff(
+    _ensure_owner_or_instructor(
         current_user,
         payment.student_id,
     )

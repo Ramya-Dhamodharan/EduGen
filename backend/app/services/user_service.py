@@ -74,8 +74,6 @@ class UserService:
             )
 
         user = await self.repo.create(data)
-        user = await self.repo.get_by_id(user.id)
-
         return self._to_user_out(user)
 
     async def update_user(
@@ -95,10 +93,7 @@ class UserService:
                 detail=f"Role with id {data.role_id} does not exist",
             )
 
-        await self.repo.update(user, data)
-
-        user = await self.repo.get_by_id(user.id)
-
+        user = await self.repo.update(user, data)
         return self._to_user_out(user)
 
     async def set_status(
@@ -110,11 +105,8 @@ class UserService:
         user = await self.get_user(user_id)
 
         user.is_active = is_active
-
         await self.repo.db.commit()
-
-        user = await self.repo.get_by_id(user.id)
-
+        await self.repo.db.refresh(user)
         return self._to_user_out(user)
 
     async def assign_role(
@@ -134,6 +126,7 @@ class UserService:
         user.role_id = role_id
 
         await self.repo.db.commit()
+        await self.repo.db.refresh(user)
 
         user = await self.repo.get_by_id(user.id)
 

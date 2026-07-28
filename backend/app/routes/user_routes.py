@@ -129,7 +129,7 @@ async def get_user(
 ):
     _ensure_admin_or_self(current_user, user_id)
 
-    return await UserService(db).get_user(user_id)
+    return await UserService(db).get_user_out(user_id)
 
 
 # Admin, or the user updating their own profile.

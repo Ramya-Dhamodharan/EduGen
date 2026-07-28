@@ -58,9 +58,8 @@ class UserRepository:
 
         self.db.add(user)
         await self.db.commit()
-        await self.db.refresh(user)
 
-        return user
+        return await self.get_by_id(user.id)
 
     async def update(
         self,
@@ -73,9 +72,8 @@ class UserRepository:
             setattr(user, field, value)
 
         await self.db.commit()
-        await self.db.refresh(user)
 
-        return user
+        return await self.get_by_id(user.id)
 
     async def delete(
         self,
