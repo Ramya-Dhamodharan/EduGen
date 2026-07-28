@@ -19,8 +19,9 @@ from app.services.payment_service import PaymentService
 router = APIRouter()
 
 
-def _ensure_owner_or_staff(user: User, student_id: uuid.UUID) -> None:
-    if user.role.name.lower() in ("admin", "instructor") or user.id == student_id:
+def _ensure_owner_or_instructor(user: User, student_id: uuid.UUID) -> None:
+    """This is the student's own record, or Instructor's to review."""
+    if user.role.name.lower() == "instructor" or user.id == student_id:
         return
     raise HTTPException(
         status.HTTP_403_FORBIDDEN,
@@ -28,45 +29,45 @@ def _ensure_owner_or_staff(user: User, student_id: uuid.UUID) -> None:
     )
 
 
-# The student themselves, or staff (Admin/Instructor).
+# The student themselves, or Instructor.
 @router.get("/{student_id}/enrollments", response_model=List[EnrollmentOut])
 async def list_student_enrollments(
     student_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _ensure_owner_or_staff(current_user, student_id)
+    _ensure_owner_or_instructor(current_user, student_id)
     return await EnrollmentService(db).list_for_student(student_id)
 
 
-# The student themselves, or staff (Admin/Instructor).
+# The student themselves, or Instructor.
 @router.get("/{student_id}/quiz-attempts", response_model=List[QuizAttemptOut])
 async def list_student_attempts(
     student_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _ensure_owner_or_staff(current_user, student_id)
+    _ensure_owner_or_instructor(current_user, student_id)
     return await QuizAttemptService(db).list_for_student(student_id)
 
 
-# The student themselves, or staff (Admin/Instructor).
+# The student themselves, or Instructor.
 @router.get("/{student_id}/certificates", response_model=List[CertificateOut])
 async def list_student_certificates(
     student_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _ensure_owner_or_staff(current_user, student_id)
+    _ensure_owner_or_instructor(current_user, student_id)
     return await CertificateService(db).list_for_student(student_id)
 
 
-# The student themselves, or staff (Admin/Instructor).
+# The student themselves, or Instructor.
 @router.get("/{student_id}/payments", response_model=List[PaymentOut])
 async def list_student_payments(
     student_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _ensure_owner_or_staff(current_user, student_id)
+    _ensure_owner_or_instructor(current_user, student_id)
     return await PaymentService(db).list_for_student(student_id)

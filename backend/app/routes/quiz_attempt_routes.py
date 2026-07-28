@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
 from app.models.user import User
-from app.core.dependencies import get_current_user, require_staff
+from app.core.dependencies import get_current_user, require_instructor, require_student
 from app.schemas.quiz_attempt_schemas import (
     QuizAttemptCreate,
     QuizAttemptUpdate,
@@ -22,12 +22,14 @@ from app.services.quiz_attempt_service import QuizAttemptService
 router = APIRouter()
 
 
-def _is_staff(user: User) -> bool:
-    return user.role.name.lower() in ("admin", "instructor")
+def _is_instructor(user: User) -> bool:
+    return user.role.name.lower() == "instructor"
 
 
-def _ensure_owner_or_staff(user: User, owner_id: uuid.UUID) -> None:
-    if _is_staff(user) or user.id == owner_id:
+def _ensure_owner_or_instructor(user: User, owner_id: uuid.UUID) -> None:
+    """A quiz attempt is the student's own record, or Instructor's to review.
+    Admin has no business here - its job is users/roles only."""
+    if _is_instructor(user) or user.id == owner_id:
         return
     raise HTTPException(
         status.HTTP_403_FORBIDDEN,
@@ -35,11 +37,11 @@ def _ensure_owner_or_staff(user: User, owner_id: uuid.UUID) -> None:
     )
 
 
-# ---- Staff: list all attempts ----
+# ---- Instructor only: list all attempts ----
 @router.get(
     "",
     response_model=List[QuizAttemptOut],
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def list_attempts(
     db: AsyncSession = Depends(get_db),
@@ -47,8 +49,8 @@ async def list_attempts(
     return await QuizAttemptService(db).list_all()
 
 
-# ---- Student: look up their own in-progress attempt(s) ----
-@router.get("/in-progress", response_model=List[QuizAttemptOut])
+# ---- Student only: look up their own in-progress attempt(s) ----
+@router.get("/in-progress", response_model=List[QuizAttemptOut], dependencies=[Depends(require_student)])
 async def list_in_progress_attempts(
     quiz_id: uuid.UUID | None = None,
     db: AsyncSession = Depends(get_db),
@@ -60,7 +62,7 @@ async def list_in_progress_attempts(
     )
 
 
-# ---- Owner or staff: view one ----
+# ---- Owner (student) or Instructor: view one ----
 @router.get("/{attempt_id}", response_model=QuizAttemptOut)
 async def get_attempt(
     attempt_id: uuid.UUID,
@@ -69,7 +71,7 @@ async def get_attempt(
 ):
     attempt = await QuizAttemptService(db).get(attempt_id)
 
-    _ensure_owner_or_staff(
+    _ensure_owner_or_instructor(
         current_user,
         attempt.student_id,
     )
@@ -77,11 +79,13 @@ async def get_attempt(
     return attempt
 
 
-# ---- Student starts/resumes an attempt ----
+# ---- Student only: starts/resumes an attempt ----
+# Taking a quiz is the Student's job - Admin and Instructor never attempt one.
 @router.post(
     "",
     response_model=QuizAttemptOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_student)],
 )
 async def start_attempt(
     payload: QuizAttemptCreate,
@@ -94,9 +98,8 @@ async def start_attempt(
     )
 
 
-# ---- Owner or staff: update ----
-
-@router.put("/{attempt_id}", response_model=QuizAttemptOut)
+# ---- Owner (student) only: update their own attempt ----
+@router.put("/{attempt_id}", response_model=QuizAttemptOut, dependencies=[Depends(require_student)])
 async def update_attempt(
     attempt_id: uuid.UUID,
     payload: QuizAttemptUpdate,
@@ -105,10 +108,11 @@ async def update_attempt(
 ):
     attempt = await QuizAttemptService(db).get(attempt_id)
 
-    _ensure_owner_or_staff(
-        current_user,
-        attempt.student_id,
-    )
+    if current_user.id != attempt.student_id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "You do not have permission to access this resource",
+        )
 
     return await QuizAttemptService(db).update(
         attempt_id,
@@ -116,9 +120,8 @@ async def update_attempt(
     )
 
 
-# ---- Owner or staff: submit & score ----
-
-@router.patch("/{attempt_id}/submit", response_model=QuizAttemptOut)
+# ---- Owner (student) only: submit & score their own attempt ----
+@router.patch("/{attempt_id}/submit", response_model=QuizAttemptOut, dependencies=[Depends(require_student)])
 async def submit_attempt(
     attempt_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -126,19 +129,20 @@ async def submit_attempt(
 ):
     attempt = await QuizAttemptService(db).get(attempt_id)
 
-    _ensure_owner_or_staff(
-        current_user,
-        attempt.student_id,
-    )
+    if current_user.id != attempt.student_id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "You do not have permission to access this resource",
+        )
 
     return await QuizAttemptService(db).submit(attempt_id)
 
 
-# ---- Staff: instructor feedback ----
+# ---- Instructor only: gives feedback on a submitted attempt ----
 @router.patch(
     "/{attempt_id}/feedback",
     response_model=QuizAttemptOut,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def give_attempt_feedback(
     attempt_id: uuid.UUID,
@@ -153,7 +157,7 @@ async def give_attempt_feedback(
     )
 
 
-# ---- Owner or staff: list answers ----
+# ---- Owner (student) or Instructor: list answers ----
 @router.get(
     "/{attempt_id}/answers",
     response_model=List[QuizAnswerOut],
@@ -165,7 +169,7 @@ async def list_attempt_answers(
 ):
     attempt = await QuizAttemptService(db).get(attempt_id)
 
-    _ensure_owner_or_staff(
+    _ensure_owner_or_instructor(
         current_user,
         attempt.student_id,
     )
@@ -173,11 +177,12 @@ async def list_attempt_answers(
     return await QuizAttemptService(db).list_answers(attempt_id)
 
 
-# ---- Nested: submit answer ----
+# ---- Nested: submit answer (owner student only) ----
 @router.post(
     "/{attempt_id}/answers",
     response_model=QuizAnswerOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_student)],
 )
 async def submit_answer_under_attempt(
     attempt_id: uuid.UUID,
@@ -189,10 +194,11 @@ async def submit_answer_under_attempt(
 
     attempt = await QuizAttemptService(db).get(attempt_id)
 
-    _ensure_owner_or_staff(
-        current_user,
-        attempt.student_id,
-    )
+    if current_user.id != attempt.student_id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "You do not have permission to access this resource",
+        )
 
     return await QuizAnswerService(db).submit(
         attempt_id,

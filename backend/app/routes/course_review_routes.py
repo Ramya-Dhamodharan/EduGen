@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_user, require_user
+from app.core.dependencies import get_current_user, require_non_admin, require_student
 from app.db.database import get_db
 from app.models.user import User
 from app.schemas.course_review_schemas import (
@@ -14,16 +14,17 @@ from app.schemas.course_review_schemas import (
 )
 from app.services.course_review_service import CourseReviewService
 
-# Any logged-in user can read reviews; write rules are enforced per-endpoint.
-router = APIRouter(dependencies=[Depends(require_user)])
+# Instructor/Student can read reviews; Admin has no business here.
+# Write rules are enforced per-endpoint below.
+router = APIRouter(dependencies=[Depends(require_non_admin)])
 
 
-def _is_staff(user: User) -> bool:
-    return user.role.name.lower() in ("admin", "instructor")
+def _is_instructor(user: User) -> bool:
+    return user.role.name.lower() == "instructor"
 
 
-def _ensure_author_or_staff(user: User, author_id: uuid.UUID) -> None:
-    if _is_staff(user) or user.id == author_id:
+def _ensure_author_or_instructor(user: User, author_id: uuid.UUID) -> None:
+    if _is_instructor(user) or user.id == author_id:
         return
     raise HTTPException(
         status.HTTP_403_FORBIDDEN,
@@ -46,11 +47,12 @@ async def get_review(
     return await CourseReviewService(db).get(review_id)
 
 
-# ---- Student writes a review (author = current user) ----
+# ---- Student only: writes a review (author = current user) ----
 @router.post(
     "",
     response_model=CourseReviewOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_student)],
 )
 async def create_review(
     payload: CourseReviewCreate,
@@ -63,7 +65,7 @@ async def create_review(
     )
 
 
-# ---- Author or staff: update ----
+# ---- Author (student) or Instructor: update (moderation) ----
 @router.put("/{review_id}", response_model=CourseReviewOut)
 async def update_review(
     review_id: uuid.UUID,
@@ -73,7 +75,7 @@ async def update_review(
 ):
     review = await CourseReviewService(db).get(review_id)
 
-    _ensure_author_or_staff(
+    _ensure_author_or_instructor(
         current_user,
         review.student_id,
     )
@@ -84,7 +86,7 @@ async def update_review(
     )
 
 
-# ---- Author or staff: delete (staff moderation) ----
+# ---- Author (student) or Instructor: delete (moderation) ----
 @router.delete(
     "/{review_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -96,7 +98,7 @@ async def delete_review(
 ):
     review = await CourseReviewService(db).get(review_id)
 
-    _ensure_author_or_staff(
+    _ensure_author_or_instructor(
         current_user,
         review.student_id,
     )

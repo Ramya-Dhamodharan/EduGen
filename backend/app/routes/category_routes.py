@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import require_staff, require_user
+from app.core.dependencies import require_instructor, require_non_admin
 from app.db.database import get_db
 from app.schemas.category_schemas import (
     CategoryCreate,
@@ -14,8 +14,8 @@ from app.schemas.category_schemas import (
 from app.schemas.course_schemas import CourseOut
 from app.services.category_service import CategoryService
 
-# Reads open to any logged-in user; writes restricted to staff (Admin/Instructor).
-router = APIRouter(dependencies=[Depends(require_user)])
+# Reads open to Instructor/Student (catalog browsing); writes are
+router = APIRouter(dependencies=[Depends(require_non_admin)])
 
 
 @router.get("", response_model=List[CategoryOut])
@@ -37,7 +37,7 @@ async def get_category(
     "",
     response_model=CategoryOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def create_category(
     payload: CategoryCreate,
@@ -49,7 +49,7 @@ async def create_category(
 @router.put(
     "/{category_id}",
     response_model=CategoryOut,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def update_category(
     category_id: uuid.UUID,
@@ -65,7 +65,7 @@ async def update_category(
 @router.delete(
     "/{category_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def delete_category(
     category_id: uuid.UUID,

@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_user, require_staff
+from app.core.dependencies import get_current_user, require_instructor
 from app.db.database import get_db
 from app.models.user import User
 from app.schemas.certificate_schemas import (
@@ -17,8 +17,19 @@ from app.services.certificate_service import CertificateService
 router = APIRouter()
 
 
-def _is_staff(user: User) -> bool:
-    return user.role.name.lower() in ("admin", "instructor")
+def _is_instructor(user: User) -> bool:
+    return user.role.name.lower() == "instructor"
+
+
+def _ensure_owner_or_instructor(user: User, owner_id: uuid.UUID) -> None:
+    """Certificates are the student's own record, or Instructor's to manage.
+    Admin has no business here - its job is users/roles only."""
+    if _is_instructor(user) or user.id == owner_id:
+        return
+    raise HTTPException(
+        status.HTTP_403_FORBIDDEN,
+        "You do not have permission to access this resource",
+    )
 
 
 # ---- Public: verify a certificate by its number (no auth) ----
@@ -45,11 +56,11 @@ async def verify_certificate(
     )
 
 
-# ---- Staff: list all ----
+# ---- Instructor only: list all ----
 @router.get(
     "",
     response_model=List[CertificateOut],
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def list_certificates(
     db: AsyncSession = Depends(get_db),
@@ -57,7 +68,7 @@ async def list_certificates(
     return await CertificateService(db).list_all()
 
 
-# ---- Owner or staff: view one ----
+# ---- Owner (student) or Instructor: view one ----
 @router.get("/{certificate_id}", response_model=CertificateOut)
 async def get_certificate(
     certificate_id: uuid.UUID,
@@ -65,22 +76,16 @@ async def get_certificate(
     current_user: User = Depends(get_current_user),
 ):
     cert = await CertificateService(db).get(certificate_id)
-
-    if not _is_staff(current_user) and current_user.id != cert.student_id:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            "You do not have permission to access this resource",
-        )
-
+    _ensure_owner_or_instructor(current_user, cert.student_id)
     return cert
 
 
-# ---- Staff: issue ----
+# ---- Instructor only: issue ----
 @router.post(
     "",
     response_model=CertificateOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def issue_certificate(
     payload: CertificateCreate,
@@ -89,11 +94,11 @@ async def issue_certificate(
     return await CertificateService(db).issue(payload)
 
 
-# ---- Staff: delete ----
+# ---- Instructor only: delete ----
 @router.delete(
     "/{certificate_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_staff)],
+    dependencies=[Depends(require_instructor)],
 )
 async def delete_certificate(
     certificate_id: uuid.UUID,
