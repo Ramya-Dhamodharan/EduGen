@@ -3,7 +3,8 @@ from decimal import Decimal
 from typing import List
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quiz_answer import QuizAnswer
 from app.models.quiz_attempt import QuizAttempt, QuizAttemptStatus
@@ -12,12 +13,12 @@ from app.repositories.quiz_answer_repo import QuizAnswerRepository
 
 
 class QuizAnswerService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.answer_repo = QuizAnswerRepository(db)
 
-    def _get(self, answer_id: uuid.UUID) -> QuizAnswer:
-        answer = self.answer_repo.get_by_id(answer_id)
+    async def _get(self, answer_id: uuid.UUID) -> QuizAnswer:
+        answer = await self.answer_repo.get_by_id(answer_id)
 
         if not answer:
             raise HTTPException(
@@ -27,23 +28,24 @@ class QuizAnswerService:
 
         return answer
 
-    def list_all(self) -> List[QuizAnswer]:
-        return self.answer_repo.get_all()
+    async def list_all(self) -> List[QuizAnswer]:
+        return await self.answer_repo.get_all()
 
-    def get(self, answer_id: uuid.UUID) -> QuizAnswer:
-        return self._get(answer_id)
+    async def get(self, answer_id: uuid.UUID) -> QuizAnswer:
+        return await self._get(answer_id)
 
-    def _grade(
+    async def _grade(
         self,
         question_id: uuid.UUID,
         selected_option: str | None,
     ) -> tuple[bool, Decimal]:
 
-        question = (
-            self.db.query(QuizQuestion)
-            .filter(QuizQuestion.id == question_id)
-            .first()
+        result = await self.db.execute(
+            select(QuizQuestion).where(
+                QuizQuestion.id == question_id
+            )
         )
+        question = result.scalar_one_or_none()
 
         if not question:
             raise HTTPException(
@@ -65,7 +67,7 @@ class QuizAnswerService:
 
         return is_correct, marks
 
-    def submit(
+    async def submit(
         self,
         attempt_id: uuid.UUID,
         question_id: uuid.UUID,
@@ -73,11 +75,12 @@ class QuizAnswerService:
         created_by: uuid.UUID,
     ) -> QuizAnswer:
 
-        attempt = (
-            self.db.query(QuizAttempt)
-            .filter(QuizAttempt.id == attempt_id)
-            .first()
+        result = await self.db.execute(
+            select(QuizAttempt).where(
+                QuizAttempt.id == attempt_id
+            )
         )
+        attempt = result.scalar_one_or_none()
 
         if not attempt:
             raise HTTPException(
@@ -91,24 +94,24 @@ class QuizAnswerService:
                 detail="This quiz has already been submitted and cannot be modified.",
             )
 
-        # One answer per (attempt, question) - matches the DB constraint
-        # uq_quiz_answers_attempt_question.
-        existing = (
-            self.db.query(QuizAnswer)
-            .filter(
+        result = await self.db.execute(
+            select(QuizAnswer).where(
                 QuizAnswer.attempt_id == attempt_id,
                 QuizAnswer.question_id == question_id,
             )
-            .first()
         )
+        existing = result.scalar_one_or_none()
+
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This question has already been answered for this attempt. "
-                       "Use PUT /api/quiz-answers/{id} to change the answer.",
+                detail=(
+                    "This question has already been answered for this attempt. "
+                    "Use PUT /api/quiz-answers/{id} to change the answer."
+                ),
             )
 
-        is_correct, marks = self._grade(
+        is_correct, marks = await self._grade(
             question_id,
             selected_option,
         )
@@ -122,15 +125,15 @@ class QuizAnswerService:
             created_by=created_by,
         )
 
-        return self.answer_repo.create(answer)
+        return await self.answer_repo.create(answer)
 
-    def update(
+    async def update(
         self,
         answer_id: uuid.UUID,
         selected_option: str | None,
     ) -> QuizAnswer:
 
-        answer = self._get(answer_id)
+        answer = await self._get(answer_id)
 
         if answer.attempt.status == QuizAttemptStatus.COMPLETED:
             raise HTTPException(
@@ -138,7 +141,7 @@ class QuizAnswerService:
                 detail="This quiz has already been submitted and cannot be modified.",
             )
 
-        is_correct, marks = self._grade(
+        is_correct, marks = await self._grade(
             answer.question_id,
             selected_option,
         )
@@ -147,4 +150,4 @@ class QuizAnswerService:
         answer.is_correct = is_correct
         answer.marks_obtained = marks
 
-        return self.answer_repo.update(answer)
+        return await self.answer_repo.update(answer)

@@ -1,52 +1,77 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.payment import Payment
 
 
 class PaymentRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_by_id(self, payment_id: uuid.UUID) -> Payment | None:
-        return (
-            self.db.query(Payment)
-            .filter(Payment.id == payment_id)
-            .first()
+    async def get_by_id(
+        self,
+        payment_id: uuid.UUID,
+    ) -> Payment | None:
+        result = await self.db.execute(
+            select(Payment).where(
+                Payment.id == payment_id
+            )
         )
+        return result.scalar_one_or_none()
 
-    def get_all(self) -> list[Payment]:
-        return self.db.query(Payment).all()
-
-    def get_by_student_id(self, student_id: uuid.UUID) -> list[Payment]:
-        return (
-            self.db.query(Payment)
-            .filter(Payment.student_id == student_id)
-            .all()
+    async def get_all(self) -> list[Payment]:
+        result = await self.db.execute(
+            select(Payment)
         )
+        return result.scalars().all()
 
-    def get_by_transaction_id(
+    async def get_by_student_id(
+        self,
+        student_id: uuid.UUID,
+    ) -> list[Payment]:
+        result = await self.db.execute(
+            select(Payment).where(
+                Payment.student_id == student_id
+            )
+        )
+        return result.scalars().all()
+
+    async def get_by_transaction_id(
         self,
         transaction_id: str,
     ) -> Payment | None:
-        return (
-            self.db.query(Payment)
-            .filter(Payment.transaction_id == transaction_id)
-            .first()
+        result = await self.db.execute(
+            select(Payment).where(
+                Payment.transaction_id == transaction_id
+            )
         )
+        return result.scalar_one_or_none()
 
-    def create(self, payment: Payment) -> Payment:
+    async def create(
+        self,
+        payment: Payment,
+    ) -> Payment:
         self.db.add(payment)
-        self.db.commit()
-        self.db.refresh(payment)
+
+        await self.db.commit()
+        await self.db.refresh(payment)
+
         return payment
 
-    def update(self, payment: Payment) -> Payment:
-        self.db.commit()
-        self.db.refresh(payment)
+    async def update(
+        self,
+        payment: Payment,
+    ) -> Payment:
+        await self.db.commit()
+        await self.db.refresh(payment)
+
         return payment
 
-    def delete(self, payment: Payment) -> None:
-        self.db.delete(payment)
-        self.db.commit()
+    async def delete(
+        self,
+        payment: Payment,
+    ) -> None:
+        await self.db.delete(payment)
+        await self.db.commit()

@@ -2,7 +2,7 @@ import uuid
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
 from app.models.user import User
@@ -22,48 +22,51 @@ router = APIRouter()
 def _ensure_owner_or_staff(user: User, student_id: uuid.UUID) -> None:
     if user.role.name.lower() in ("admin", "instructor") or user.id == student_id:
         return
-    raise HTTPException(status.HTTP_403_FORBIDDEN, "You do not have permission to access this resource")
+    raise HTTPException(
+        status.HTTP_403_FORBIDDEN,
+        "You do not have permission to access this resource",
+    )
 
 
 # The student themselves, or staff (Admin/Instructor).
 @router.get("/{student_id}/enrollments", response_model=List[EnrollmentOut])
-def list_student_enrollments(
+async def list_student_enrollments(
     student_id: uuid.UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     _ensure_owner_or_staff(current_user, student_id)
-    return EnrollmentService(db).list_for_student(student_id)
+    return await EnrollmentService(db).list_for_student(student_id)
 
 
 # The student themselves, or staff (Admin/Instructor).
 @router.get("/{student_id}/quiz-attempts", response_model=List[QuizAttemptOut])
-def list_student_attempts(
+async def list_student_attempts(
     student_id: uuid.UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     _ensure_owner_or_staff(current_user, student_id)
-    return QuizAttemptService(db).list_for_student(student_id)
+    return await QuizAttemptService(db).list_for_student(student_id)
 
 
 # The student themselves, or staff (Admin/Instructor).
 @router.get("/{student_id}/certificates", response_model=List[CertificateOut])
-def list_student_certificates(
+async def list_student_certificates(
     student_id: uuid.UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     _ensure_owner_or_staff(current_user, student_id)
-    return CertificateService(db).list_for_student(student_id)
+    return await CertificateService(db).list_for_student(student_id)
 
 
 # The student themselves, or staff (Admin/Instructor).
 @router.get("/{student_id}/payments", response_model=List[PaymentOut])
-def list_student_payments(
+async def list_student_payments(
     student_id: uuid.UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     _ensure_owner_or_staff(current_user, student_id)
-    return PaymentService(db).list_for_student(student_id)
+    return await PaymentService(db).list_for_student(student_id)
