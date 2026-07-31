@@ -1,0 +1,75 @@
+from typing import List, Optional
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.role import Role
+from app.schema.role_schemas import RoleCreate, RoleUpdate
+
+
+class RoleRepository:
+    """
+    Pure data-access layer. No business rules here — just talks to the DB.
+    """
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_all(self) -> List[Role]:
+        result = self.db.execute(
+            select(Role)
+        )
+        return result.scalars().all()
+
+    def get_by_id(
+        self,
+        role_id: int,
+    ) -> Optional[Role]:
+        result = self.db.execute(
+            select(Role).where(Role.id == role_id)
+        )
+        return result.scalar_one_or_none()
+
+    def get_by_name(
+        self,
+        name: str,
+    ) -> Optional[Role]:
+        # Case-insensitive so "student" also matches a "Student" row.
+        result = self.db.execute(
+            select(Role).where(Role.name.ilike(name))
+        )
+        return result.scalar_one_or_none()
+
+    def create(
+        self,
+        data: RoleCreate,
+    ) -> Role:
+        role = Role(name=data.name)
+
+        self.db.add(role)
+        self.db.commit()
+        self.db.refresh(role)
+
+        return role
+
+    def update(
+        self,
+        role: Role,
+        data: RoleUpdate,
+    ) -> Role:
+        update_data = data.model_dump(exclude_unset=True)
+
+        for field, value in update_data.items():
+            setattr(role, field, value)
+
+        self.db.commit()
+        self.db.refresh(role)
+
+        return role
+
+    def delete(
+        self,
+        role: Role,
+    ) -> None:
+        self.db.delete(role)
+        self.db.commit()

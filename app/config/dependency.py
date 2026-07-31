@@ -1,0 +1,96 @@
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
+from app.core.config import settings
+from app.db.database import get_db
+from app.models.user import User
+
+bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    unauthorized = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if credentials is None:
+        raise unauthorized
+
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+
+        if payload.get("type") != "access":
+            raise unauthorized
+
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise unauthorized
+
+    except JWTError:
+        raise unauthorized
+
+    result = db.execute(
+        select(User)
+        .options(selectinload(User.role))
+        .where(User.id == user_id)
+    )
+
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise unauthorized
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated",
+        )
+
+    return user
+
+
+class RoleChecker:
+    """Usage: Depends(RoleChecker(["Admin"]))"""
+
+    def __init__(self, allowed_roles: list[str]):
+        self.allowed_roles = [role.lower() for role in allowed_roles]
+
+    def __call__(
+        self,
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        if current_user.role.name.lower() not in self.allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to access this resource",
+            )
+
+        return current_user
+
+
+# Admin only
+require_admin = RoleChecker(["Admin"])
+
+# Instructor only
+require_instructor = RoleChecker(["Instructor"])
+
+# Student only
+require_student = RoleChecker(["Student"])
+
+# Instructor or Student
+require_non_admin = RoleChecker(["Instructor", "Student"])
+
+# Any authenticated user
+require_user = get_current_user
