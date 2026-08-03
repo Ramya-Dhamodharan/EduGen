@@ -12,6 +12,7 @@ dependencies = [
     "psycopg2-binary>=2.9.12",
     "pydantic-settings>=2.14.2",
     "python-jose[cryptography]>=3.5.0",
+    "redis>=8.1.0",
     "sqlalchemy>=2.0.51",
 ]
 

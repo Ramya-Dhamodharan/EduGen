@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     SMTP_FROM: str | None = None
     SMTP_USE_TLS: bool = True
 
+    REDIS_URL: str
+
     class Config:
         env_file = ".env"
 

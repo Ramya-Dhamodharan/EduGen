@@ -10,8 +10,10 @@ from app.core.security import (
     verify_password,
     create_access_token,
     create_refresh_token,
+)
+from app.utils.otp import (
     generate_otp,
-    verify_otp,
+    verify_otp
 )
 from app.models.user import User
 from app.schemas.user_schemas import UserOut
@@ -163,7 +165,7 @@ class AuthService:
         if not user:
             return
 
-        otp = generate_otp(user.email)
+        otp = await generate_otp(user.email)
         send_otp_email(user.email, otp)
 
     async def reset_password(
@@ -171,7 +173,7 @@ class AuthService:
         data: ResetPasswordRequest,
     ) -> None:
 
-        if not verify_otp(data.email, data.otp):
+        if not await verify_otp(data.email, data.otp):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired OTP code",

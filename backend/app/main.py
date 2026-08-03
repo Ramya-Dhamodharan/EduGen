@@ -2,14 +2,28 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.redis import redis    
 
 # Import all models so SQLAlchemy registers every mapper at startup
 import app.models  # noqa: F401
+
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    await redis.ping()
+    print("Redis Connected")
+
+    yield
+
+    await redis.aclose()
 
 
 app = FastAPI(
     title=settings.APP_NAME,
     debug=settings.DEBUG,
+    lifespan=lifespan
 )
 
 
