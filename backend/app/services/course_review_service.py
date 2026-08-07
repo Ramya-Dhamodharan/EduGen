@@ -1,7 +1,6 @@
 import uuid
 from typing import List
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +11,7 @@ from app.schemas.course_review_schemas import (
     CourseReviewCreate,
     CourseReviewUpdate,
 )
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class CourseReviewService:
@@ -23,10 +23,7 @@ class CourseReviewService:
         review = await self.review_repo.get_by_id(review_id)
 
         if not review:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Review {review_id} not found",
-            )
+            raise NotFoundError(f"Review {review_id} not found")
 
         return review
 
@@ -54,10 +51,7 @@ class CourseReviewService:
         course = result.scalar_one_or_none()
 
         if not course:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Course {data.course_id} does not exist",
-            )
+            raise BadRequestError(f"Course {data.course_id} does not exist")
 
         existing = await self.review_repo.get_by_course_and_student(
             data.course_id,
@@ -65,10 +59,7 @@ class CourseReviewService:
         )
 
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You have already reviewed this course",
-            )
+            raise BadRequestError("You have already reviewed this course")
 
         review = CourseReview(
             course_id=data.course_id,

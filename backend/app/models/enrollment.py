@@ -12,7 +12,7 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     UniqueConstraint,
     func,
-    Enum as SqlEnum
+    Enum as SqlEnum,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -20,11 +20,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.database import Base
 from enum import Enum
 
+
 class EnrollmentStatus(str, Enum):
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
 
-if TYPE_CHECKING: 
+
+if TYPE_CHECKING:
     from app.models.course import Course
     from app.models.user import User
 
@@ -41,18 +43,15 @@ class Enrollment(Base):
             "id",
             name="pk_enrollments",
         ),
-
         UniqueConstraint(
             "student_id",
             "course_id",
             name="uq_enrollments_student_course",
         ),
-
         Index(
             "ix_enrollments_course_id",
             "course_id",
         ),
-
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -125,7 +124,4 @@ class Enrollment(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Enrollment(student={self.student_id}, "
-            f"course={self.course_id})>"
-        )
+        return f"<Enrollment(student={self.student_id}, course={self.course_id})>"

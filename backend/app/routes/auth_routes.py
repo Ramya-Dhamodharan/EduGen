@@ -32,6 +32,7 @@ async def register(
 
 @router.post(
     "/login",
+    status_code=status.HTTP_200_OK,
     response_model=TokenResponse,
 )
 async def login(
@@ -55,6 +56,7 @@ async def login(
 
 @router.post(
     "/refresh-token",
+    status_code=status.HTTP_200_OK,
     response_model=TokenResponse,
 )
 async def refresh(
@@ -65,38 +67,35 @@ async def refresh(
     return TokenResponse(access_token=new_access)
 
 
-@router.post("/logout")
+@router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(response: Response):
     response.delete_cookie(key="refresh_token")
     return {"message": "Logged out successfully"}
 
 
-@router.post("/forgot-password")
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
 async def forgot_password(
     payload: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ):
     await AuthService(db).forgot_password(payload.email)
 
-    return {
-        "message": "If the email exists, an OTP code has been dispatched."
-    }
+    return {"message": "If the email exists, an OTP code has been dispatched."}
 
 
-@router.post("/reset-password")
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
 async def reset_password(
     payload: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ):
     await AuthService(db).reset_password(payload)
 
-    return {
-        "message": "Password updated successfully!"
-    }
+    return {"message": "Password updated successfully!"}
 
 
 @router.get(
     "/me",
+    status_code=status.HTTP_200_OK,
     response_model=UserOut,
 )
 async def get_me(

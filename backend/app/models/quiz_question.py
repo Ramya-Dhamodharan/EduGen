@@ -14,7 +14,6 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     String,
     Text,
-    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -25,6 +24,7 @@ from app.db.database import Base
 if TYPE_CHECKING:
     from app.models.quiz import Quiz
     from app.models.quiz_answer import QuizAnswer
+
 
 class QuizQuestion(Base):
     """
@@ -38,21 +38,14 @@ class QuizQuestion(Base):
             "id",
             name="pk_quiz_questions",
         ),
-
-        
-
         CheckConstraint(
             "marks > 0",
             name="ck_quiz_questions_marks_positive",
         ),
-
-       
-
         CheckConstraint(
             "correct_option IN ('A','B','C','D')",
             name="ck_quiz_questions_correct_option",
         ),
-
         Index(
             "ix_quiz_questions_quiz_id",
             "quiz_id",
@@ -77,8 +70,6 @@ class QuizQuestion(Base):
         nullable=False,
         comment="Quiz to which this question belongs.",
     )
-
-   
 
     question: Mapped[str] = mapped_column(
         Text,
@@ -174,6 +165,4 @@ class QuizQuestion(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<QuizQuestion(id={self.id}, position={self.marks}, question='{self.question[:20]}...')>"
-        )
+        return f"<QuizQuestion(id={self.id}, position={self.marks}, question='{self.question[:20]}...')>"

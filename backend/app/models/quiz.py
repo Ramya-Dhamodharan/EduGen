@@ -9,7 +9,6 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
-    Index,
     Integer,
     PrimaryKeyConstraint,
     String,
@@ -39,27 +38,22 @@ class Quiz(Base):
             "id",
             name="pk_quizzes",
         ),
-
         CheckConstraint(
             "total_marks >= 0",
             name="ck_quizzes_total_marks",
         ),
-
         CheckConstraint(
             "pass_marks >= 0",
             name="ck_quizzes_pass_marks_positive",
         ),
-
         CheckConstraint(
             "pass_marks <= total_marks",
             name="ck_quizzes_pass_marks_valid",
         ),
-
         CheckConstraint(
             "duration > 0",
             name="ck_quizzes_duration_positive",
         ),
-
         CheckConstraint(
             "duration_days > 0",
             name="ck_quizzes_duration_days_positive",

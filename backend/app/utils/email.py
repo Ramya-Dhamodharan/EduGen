@@ -12,11 +12,13 @@ def is_smtp_configured() -> bool:
     return bool(settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD)
 
 
-def _print_otp_to_terminal(to_email: str, otp: str, reason: str = "SMTP not configured") -> None:
+def _print_otp_to_terminal(
+    to_email: str, otp: str, reason: str = "SMTP not configured"
+) -> None:
     print("=" * 60)
     print(f"  [DEV MODE - {reason}]")
     print(f"  Password reset OTP for {to_email}: {otp}")
-    print(f"  (valid for 5 minutes)")
+    print("  (valid for 5 minutes)")
     print("=" * 60)
 
 
@@ -40,16 +42,26 @@ def send_otp_email(to_email: str, otp: str) -> None:
 
     try:
         if settings.SMTP_USE_TLS:
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+            with smtplib.SMTP(
+                settings.SMTP_HOST, settings.SMTP_PORT, timeout=15
+            ) as server:
                 server.starttls(context=ssl.create_default_context())
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                 server.send_message(msg)
         else:
-            with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT,
-                                  context=ssl.create_default_context(), timeout=15) as server:
+            with smtplib.SMTP_SSL(
+                settings.SMTP_HOST,
+                settings.SMTP_PORT,
+                context=ssl.create_default_context(),
+                timeout=15,
+            ) as server:
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                 server.send_message(msg)
         logger.info("OTP email sent to %s", to_email)
-    except Exception as exc:
-        logger.error("Failed to send OTP email to %s: %s", to_email, exc)
-        _print_otp_to_terminal(to_email, otp, reason=f"SMTP send failed: {exc}")
+    except smtplib.SMTPException:
+        logger.exception("SMTP error")
+        _print_otp_to_terminal(to_email, otp, "SMTP error")
+
+    except (TimeoutError, ConnectionRefusedError, OSError, ssl.SSLError):
+        logger.exception("Network error")
+        _print_otp_to_terminal(to_email, otp, "Network error")

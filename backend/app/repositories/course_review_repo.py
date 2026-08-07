@@ -15,16 +15,12 @@ class CourseReviewRepository:
         review_id: uuid.UUID,
     ) -> CourseReview | None:
         result = await self.db.execute(
-            select(CourseReview).where(
-                CourseReview.id == review_id
-            )
+            select(CourseReview).where(CourseReview.id == review_id)
         )
         return result.scalar_one_or_none()
 
     async def get_all(self) -> list[CourseReview]:
-        result = await self.db.execute(
-            select(CourseReview)
-        )
+        result = await self.db.execute(select(CourseReview))
         return result.scalars().all()
 
     async def get_by_course_id(
@@ -32,9 +28,7 @@ class CourseReviewRepository:
         course_id: uuid.UUID,
     ) -> list[CourseReview]:
         result = await self.db.execute(
-            select(CourseReview).where(
-                CourseReview.course_id == course_id
-            )
+            select(CourseReview).where(CourseReview.course_id == course_id)
         )
         return result.scalars().all()
 

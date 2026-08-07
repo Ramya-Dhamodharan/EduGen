@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.redis import redis
 
 OTP_LENGTH = 6
-OTP_EXPIRY_SECONDS = 3 * 60       # 3 minutes
+OTP_EXPIRY_SECONDS = 3 * 60  # 3 minutes
 EMAIL_TTL_SECONDS = 24 * 60 * 60  # 1 day
 MAX_ATTEMPTS = 3
 
@@ -23,10 +23,7 @@ def hash_otp(email: str, otp: str) -> str:
 
 
 def create_otp() -> str:
-    return "".join(
-        secrets.choice("0123456789")
-        for _ in range(OTP_LENGTH)
-    )
+    return "".join(secrets.choice("0123456789") for _ in range(OTP_LENGTH))
 
 
 async def generate_otp(email: str) -> str:

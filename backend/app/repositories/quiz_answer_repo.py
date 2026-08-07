@@ -17,12 +17,8 @@ class QuizAnswerRepository:
     ) -> QuizAnswer | None:
         result = await self.db.execute(
             select(QuizAnswer)
-            .options(
-                joinedload(QuizAnswer.attempt)
-            )
-            .where(
-                QuizAnswer.id == answer_id
-            )
+            .options(joinedload(QuizAnswer.attempt))
+            .where(QuizAnswer.id == answer_id)
         )
         return result.scalar_one_or_none()
 

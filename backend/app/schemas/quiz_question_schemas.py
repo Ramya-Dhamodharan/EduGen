@@ -17,6 +17,7 @@ class QuizQuestionCreate(BaseModel):
 
 class QuizQuestionNestedCreate(BaseModel):
     """Body for POST /quizzes/{quizId}/questions - quiz_id comes from the path."""
+
     question: str
     option_a: Optional[str] = None
     option_b: Optional[str] = None
@@ -52,4 +53,5 @@ class QuizQuestionOut(BaseModel):
 
 class QuizQuestionWithAnswerOut(QuizQuestionOut):
     """Includes the correct option - only returned to staff."""
+
     correct_option: str

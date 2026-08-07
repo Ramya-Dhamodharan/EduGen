@@ -24,9 +24,7 @@ class CategoryRepository:
         return result.scalar_one_or_none()
 
     async def get_by_name(self, name: str) -> Optional[Category]:
-        result = await self.db.execute(
-            select(Category).where(Category.name == name)
-        )
+        result = await self.db.execute(select(Category).where(Category.name == name))
         return result.scalar_one_or_none()
 
     async def create(self, data: CategoryCreate) -> Category:
@@ -38,7 +36,11 @@ class CategoryRepository:
 
         return category
 
-    async def update(self,category: Category,data: CategoryUpdate,) -> Category:
+    async def update(
+        self,
+        category: Category,
+        data: CategoryUpdate,
+    ) -> Category:
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(category, field, value)
 

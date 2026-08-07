@@ -35,8 +35,14 @@ def _ensure_admin_or_self(current_user: User, target_user_id: uuid.UUID) -> None
 # Admin-only management
 # ==========================
 
+
 # Admin only: list all users.
-@router.get("", response_model=List[UserOut], dependencies=[Depends(require_admin)])
+@router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+    response_model=List[UserOut],
+    dependencies=[Depends(require_admin)],
+)
 async def list_users(db: AsyncSession = Depends(get_db)):
     return await UserService(db).list_users()
 
@@ -78,6 +84,7 @@ async def delete_user(
 # Admin only: activate or deactivate a user.
 @router.patch(
     "/{user_id}/status",
+    status_code=status.HTTP_200_OK,
     response_model=UserOut,
     dependencies=[Depends(require_admin)],
 )
@@ -102,6 +109,7 @@ async def update_user_status(
 # Admin only: assign a role to a user.
 @router.patch(
     "/{user_id}/role",
+    status_code=status.HTTP_200_OK,
     response_model=UserOut,
     dependencies=[Depends(require_admin)],
 )
@@ -120,8 +128,9 @@ async def assign_user_role(
 # Admin or the user themselves
 # ==========================
 
+
 # Admin, or the user viewing their own profile.
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserOut)
 async def get_user(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -133,7 +142,7 @@ async def get_user(
 
 
 # Admin, or the user updating their own profile.
-@router.put("/{user_id}", response_model=UserOut)
+@router.put("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserOut)
 async def update_user(
     user_id: uuid.UUID,
     payload: UserUpdate,

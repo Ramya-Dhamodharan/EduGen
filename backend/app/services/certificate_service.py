@@ -1,6 +1,5 @@
 import uuid
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +8,7 @@ from app.models.course import Course
 from app.models.user import User
 from app.repositories.certificate_repo import CertificateRepository
 from app.schemas.certificate_schemas import CertificateCreate
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class CertificateService:
@@ -20,10 +20,7 @@ class CertificateService:
         certificate = await self.certificate_repo.get_by_id(certificate_id)
 
         if not certificate:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Certificate {certificate_id} not found",
-            )
+            raise NotFoundError(f"Certificate {certificate_id} not found")
 
         return certificate
 
@@ -37,21 +34,14 @@ class CertificateService:
         return await self.certificate_repo.get_by_student_id(student_id)
 
     async def verify(self, certificate_number: str):
-        return await self.certificate_repo.get_by_certificate_number(
-            certificate_number
-        )
+        return await self.certificate_repo.get_by_certificate_number(certificate_number)
 
     async def issue(self, data: CertificateCreate):
-        result = await self.db.execute(
-            select(User).where(User.id == data.student_id)
-        )
+        result = await self.db.execute(select(User).where(User.id == data.student_id))
         student = result.scalar_one_or_none()
 
         if not student:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Student {data.student_id} does not exist",
-            )
+            raise BadRequestError(f"Student {data.student_id} does not exist")
 
         result = await self.db.execute(
             select(Course).where(Course.id == data.course_id)
@@ -59,20 +49,14 @@ class CertificateService:
         course = result.scalar_one_or_none()
 
         if not course:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Course {data.course_id} does not exist",
-            )
+            raise BadRequestError(f"Course {data.course_id} does not exist")
 
         existing = await self.certificate_repo.get_by_certificate_number(
             data.certificate_number
         )
 
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Certificate number already exists",
-            )
+            raise BadRequestError("Certificate number already exists")
 
         certificate = Certificate(
             student_id=data.student_id,

@@ -33,9 +33,7 @@ class Role(Base):
     __table_args__ = (
         PrimaryKeyConstraint("id", name="pk_roles"),
         Index("ix_roles_name", "name"),
-        {
-            "comment": "Stores all user roles available in the LMS."
-        },
+        {"comment": "Stores all user roles available in the LMS."},
     )
 
     id: Mapped[int] = mapped_column(

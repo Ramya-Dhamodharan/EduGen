@@ -15,14 +15,14 @@ from app.services.role_service import RoleService
 router = APIRouter(dependencies=[Depends(require_admin)])
 
 
-@router.get("", response_model=List[RoleOut])
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[RoleOut])
 async def list_roles(
     db: AsyncSession = Depends(get_db),
 ):
     return await RoleService(db).list_roles()
 
 
-@router.get("/{role_id}", response_model=RoleOut)
+@router.get("/{role_id}", status_code=status.HTTP_200_OK, response_model=RoleOut)
 async def get_role(
     role_id: int,
     db: AsyncSession = Depends(get_db),
@@ -42,7 +42,7 @@ async def create_role(
     return await RoleService(db).create_role(payload)
 
 
-@router.put("/{role_id}", response_model=RoleOut)
+@router.put("/{role_id}", status_code=status.HTTP_200_OK, response_model=RoleOut)
 async def update_role(
     role_id: int,
     payload: RoleUpdate,

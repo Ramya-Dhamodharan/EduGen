@@ -1,13 +1,13 @@
 import uuid
 from typing import List
 
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category import Category
 from app.models.course import Course
 from app.repositories.category_repo import CategoryRepository
 from app.schemas.category_schemas import CategoryCreate, CategoryUpdate
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class CategoryService:
@@ -21,10 +21,7 @@ class CategoryService:
         category = await self.repo.get_by_id(category_id)
 
         if not category:
-            raise HTTPException(
-                status.HTTP_404_NOT_FOUND,
-                f"Category {category_id} not found",
-            )
+            raise NotFoundError(f"Category {category_id} not found")
 
         return category
 
@@ -33,10 +30,7 @@ class CategoryService:
         data: CategoryCreate,
     ) -> Category:
         if await self.repo.get_by_name(data.name):
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                f"Category '{data.name}' already exists",
-            )
+            raise BadRequestError(f"Category '{data.name}' already exists")
 
         return await self.repo.create(data)
 

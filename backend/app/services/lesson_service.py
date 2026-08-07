@@ -1,12 +1,12 @@
 import uuid
 from typing import List, Optional
 
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.lesson import Lesson
 from app.repositories.lesson_repo import LessonRepository
 from app.schemas.lesson_schemas import LessonCreate, LessonUpdate
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class LessonService:
@@ -20,10 +20,7 @@ class LessonService:
         lesson = await self.repo.get_by_id(lesson_id)
 
         if not lesson:
-            raise HTTPException(
-                status.HTTP_404_NOT_FOUND,
-                f"Lesson {lesson_id} not found",
-            )
+            raise NotFoundError(f"Lesson {lesson_id} not found")
 
         return lesson
 
@@ -32,10 +29,7 @@ class LessonService:
         data: LessonCreate,
     ) -> Lesson:
         if not await self.repo.module_exists(data.module_id):
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                f"Module {data.module_id} does not exist",
-            )
+            raise BadRequestError(f"Module {data.module_id} does not exist")
 
         return await self.repo.create(data)
 
@@ -48,10 +42,7 @@ class LessonService:
     ) -> Lesson:
 
         if not await self.repo.module_exists(module_id):
-            raise HTTPException(
-                status.HTTP_404_NOT_FOUND,
-                f"Module {module_id} not found",
-            )
+            raise NotFoundError(f"Module {module_id} not found")
 
         return await self.repo.create_under_module(
             module_id,

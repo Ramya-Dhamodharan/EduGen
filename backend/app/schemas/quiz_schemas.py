@@ -18,6 +18,7 @@ class QuizCreate(BaseModel):
 
 class QuizNestedCreate(BaseModel):
     """Body for POST /courses/{courseId}/quizzes - course_id comes from the path."""
+
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     lesson_id: Optional[UUID] = None

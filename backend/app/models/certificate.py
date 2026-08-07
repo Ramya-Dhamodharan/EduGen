@@ -36,36 +36,28 @@ class Certificate(Base):
             "id",
             name="pk_certificates",
         ),
-
         UniqueConstraint(
             "certificate_number",
             name="uq_certificates_certificate_number",
         ),
-
         UniqueConstraint(
             "student_id",
             "course_id",
             name="uq_certificates_student_course",
         ),
-
         Index(
             "ix_certificates_student_id",
             "student_id",
         ),
-
         Index(
             "ix_certificates_course_id",
             "course_id",
         ),
-
         Index(
             "ix_certificates_issued_at",
             "issued_at",
         ),
-
-        {
-            "comment": "Stores certificates issued after course completion."
-        },
+        {"comment": "Stores certificates issued after course completion."},
     )
 
     id: Mapped[uuid.UUID] = mapped_column(

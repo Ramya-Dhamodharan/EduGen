@@ -2,13 +2,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import List
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.course import Course
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.repositories.payment_repo import PaymentRepository
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class PaymentService:
@@ -20,10 +20,7 @@ class PaymentService:
         payment = await self.payment_repo.get_by_id(payment_id)
 
         if not payment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Payment {payment_id} not found",
-            )
+            raise NotFoundError(f"Payment {payment_id} not found")
 
         return payment
 
@@ -51,10 +48,7 @@ class PaymentService:
         course = result.scalar_one_or_none()
 
         if not course:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Course {data.course_id} does not exist",
-            )
+            raise BadRequestError(f"Course {data.course_id} does not exist")
 
         payment = Payment(
             student_id=student_id,
@@ -88,10 +82,7 @@ class PaymentService:
         if receipt_url:
             payment.receipt_url = receipt_url
 
-        if (
-            payment.payment_status == PaymentStatus.SUCCESS
-            and not payment.payment_date
-        ):
+        if payment.payment_status == PaymentStatus.SUCCESS and not payment.payment_date:
             payment.payment_date = datetime.now(timezone.utc)
 
         return await self.payment_repo.update(payment)
@@ -103,25 +94,17 @@ class PaymentService:
         receipt_url: str | None = None,
     ) -> Payment:
 
-        payment = await self.payment_repo.get_by_transaction_id(
-            transaction_id
-        )
+        payment = await self.payment_repo.get_by_transaction_id(transaction_id)
 
         if not payment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No payment for transaction {transaction_id}",
-            )
+            raise NotFoundError(f"No payment for transaction {transaction_id}")
 
         payment.payment_status = PaymentStatus(new_status)
 
         if receipt_url:
             payment.receipt_url = receipt_url
 
-        if (
-            payment.payment_status == PaymentStatus.SUCCESS
-            and not payment.payment_date
-        ):
+        if payment.payment_status == PaymentStatus.SUCCESS and not payment.payment_date:
             payment.payment_date = datetime.now(timezone.utc)
 
         return await self.payment_repo.update(payment)

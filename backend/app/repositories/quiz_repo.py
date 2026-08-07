@@ -15,17 +15,11 @@ class QuizRepository:
         self,
         quiz_id: uuid.UUID,
     ) -> Quiz | None:
-        result = await self.db.execute(
-            select(Quiz).where(
-                Quiz.id == quiz_id
-            )
-        )
+        result = await self.db.execute(select(Quiz).where(Quiz.id == quiz_id))
         return result.scalar_one_or_none()
 
     async def get_all(self) -> list[Quiz]:
-        result = await self.db.execute(
-            select(Quiz)
-        )
+        result = await self.db.execute(select(Quiz))
         return result.scalars().all()
 
     async def get_questions(
@@ -33,9 +27,7 @@ class QuizRepository:
         quiz_id: uuid.UUID,
     ) -> list[QuizQuestion]:
         result = await self.db.execute(
-            select(QuizQuestion).where(
-                QuizQuestion.quiz_id == quiz_id
-            )
+            select(QuizQuestion).where(QuizQuestion.quiz_id == quiz_id)
         )
         return result.scalars().all()
 

@@ -8,13 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 # Create Quiz
 # ==========================================
 
-class QuizCreate(BaseModel):
 
-    title: str = Field(
-        ...,
-        min_length=1,
-        max_length=255
-    )
+class QuizCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
 
     description: str | None = None
 
@@ -22,20 +18,11 @@ class QuizCreate(BaseModel):
 
     lessons_id: int | None = None
 
-    total_marks: int | None = Field(
-        default=None,
-        ge=0
-    )
+    total_marks: int | None = Field(default=None, ge=0)
 
-    pass_marks: int | None = Field(
-        default=None,
-        ge=0
-    )
+    pass_marks: int | None = Field(default=None, ge=0)
 
-    duration: int | None = Field(
-        default=None,
-        gt=0
-    )
+    duration: int | None = Field(default=None, gt=0)
 
     is_active: bool = True
 
@@ -44,13 +31,9 @@ class QuizCreate(BaseModel):
 # Update Quiz
 # ==========================================
 
-class QuizUpdate(BaseModel):
 
-    title: str | None = Field(
-        default=None,
-        min_length=1,
-        max_length=255
-    )
+class QuizUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=255)
 
     description: str | None = None
 
@@ -58,20 +41,11 @@ class QuizUpdate(BaseModel):
 
     lessons_id: int | None = None
 
-    total_marks: int | None = Field(
-        default=None,
-        ge=0
-    )
+    total_marks: int | None = Field(default=None, ge=0)
 
-    pass_marks: int | None = Field(
-        default=None,
-        ge=0
-    )
+    pass_marks: int | None = Field(default=None, ge=0)
 
-    duration: int | None = Field(
-        default=None,
-        gt=0
-    )
+    duration: int | None = Field(default=None, gt=0)
 
     is_active: bool | None = None
 
@@ -80,11 +54,9 @@ class QuizUpdate(BaseModel):
 # Quiz Response
 # ==========================================
 
-class QuizResponse(BaseModel):
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+class QuizResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
     id: UUID
 

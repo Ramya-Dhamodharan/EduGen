@@ -18,14 +18,16 @@ from app.services.category_service import CategoryService
 router = APIRouter(dependencies=[Depends(require_non_admin)])
 
 
-@router.get("", response_model=List[CategoryOut])
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[CategoryOut])
 async def list_categories(
     db: AsyncSession = Depends(get_db),
 ):
     return await CategoryService(db).list_categories()
 
 
-@router.get("/{category_id}", response_model=CategoryOut)
+@router.get(
+    "/{category_id}", status_code=status.HTTP_200_OK, response_model=CategoryOut
+)
 async def get_category(
     category_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -48,6 +50,7 @@ async def create_category(
 
 @router.put(
     "/{category_id}",
+    status_code=status.HTTP_200_OK,
     response_model=CategoryOut,
     dependencies=[Depends(require_instructor)],
 )
@@ -76,12 +79,11 @@ async def delete_category(
 
 @router.get(
     "/{category_id}/courses",
+    status_code=status.HTTP_200_OK,
     response_model=List[CourseOut],
 )
 async def list_courses_in_category(
     category_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    return await CategoryService(db).get_courses_in_category(
-        category_id
-    )
+    return await CategoryService(db).get_courses_in_category(category_id)

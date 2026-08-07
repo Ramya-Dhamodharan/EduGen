@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from app.models.certificate import Certificate
     from app.models.payment import Payment
 
+
 class CourseLevel(str, Enum):
     BEGINNER = "Beginner"
     INTERMEDIATE = "Intermediate"
@@ -54,18 +55,14 @@ class Course(Base):
             "id",
             name="pk_courses",
         ),
-
         CheckConstraint(
             "price >= 0",
             name="ck_courses_price_positive",
         ),
-
         Index(
             "ix_courses_category_id",
             "category_id",
         ),
-
-
         Index(
             "ix_courses_title",
             "title",

@@ -21,18 +21,14 @@ class LessonRepository:
         self,
         lesson_id: uuid.UUID,
     ) -> Optional[Lesson]:
-        result = await self.db.execute(
-            select(Lesson).where(Lesson.id == lesson_id)
-        )
+        result = await self.db.execute(select(Lesson).where(Lesson.id == lesson_id))
         return result.scalar_one_or_none()
 
     async def module_exists(
         self,
         module_id: uuid.UUID,
     ) -> bool:
-        result = await self.db.execute(
-            select(Module).where(Module.id == module_id)
-        )
+        result = await self.db.execute(select(Module).where(Module.id == module_id))
         return result.scalar_one_or_none() is not None
 
     async def create(

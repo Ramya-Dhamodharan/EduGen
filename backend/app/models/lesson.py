@@ -6,15 +6,11 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
-    CheckConstraint,
     DateTime,
     ForeignKey,
-    Index,
-    Integer,
     PrimaryKeyConstraint,
     String,
     Text,
-    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -25,6 +21,7 @@ from app.db.database import Base
 if TYPE_CHECKING:
     from app.models.module import Module
     from app.models.quiz import Quiz
+
 
 class Lesson(Base):
     """
@@ -38,11 +35,6 @@ class Lesson(Base):
             "id",
             name="pk_lessons",
         ),
-
-
-
-
-        
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -69,7 +61,6 @@ class Lesson(Base):
         nullable=True,
         comment="Video URL associated with the lesson.",
     )
-
 
     module_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

@@ -1,7 +1,6 @@
 import uuid
 from typing import List
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +11,7 @@ from app.schemas.quiz_question_schemas import (
     QuizQuestionCreate,
     QuizQuestionUpdate,
 )
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class QuizQuestionService:
@@ -23,24 +23,16 @@ class QuizQuestionService:
         question = await self.question_repo.get_by_id(question_id)
 
         if not question:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Question {question_id} not found",
-            )
+            raise NotFoundError(f"Question {question_id} not found")
 
         return question
 
     async def _validate_quiz(self, quiz_id: uuid.UUID) -> None:
-        result = await self.db.execute(
-            select(Quiz).where(Quiz.id == quiz_id)
-        )
+        result = await self.db.execute(select(Quiz).where(Quiz.id == quiz_id))
         quiz = result.scalar_one_or_none()
 
         if not quiz:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Quiz {quiz_id} does not exist",
-            )
+            raise BadRequestError(f"Quiz {quiz_id} does not exist")
 
     async def list_all(self) -> List[QuizQuestion]:
         return await self.question_repo.get_all()

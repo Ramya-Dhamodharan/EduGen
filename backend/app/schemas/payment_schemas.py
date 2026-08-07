@@ -16,13 +16,16 @@ class PaymentCreate(BaseModel):
 
 
 class PaymentStatusUpdate(BaseModel):
-    payment_status: str = Field(..., description="PENDING, SUCCESS, FAILED, or REFUNDED")
+    payment_status: str = Field(
+        ..., description="PENDING, SUCCESS, FAILED, or REFUNDED"
+    )
     transaction_id: Optional[str] = None
     receipt_url: Optional[str] = None
 
 
 class PaymentWebhook(BaseModel):
     """Gateway callback payload (shape depends on your provider)."""
+
     transaction_id: str
     payment_status: str
     receipt_url: Optional[str] = None

@@ -26,6 +26,7 @@ class CertificateOut(BaseModel):
 
 class CertificateVerifyOut(BaseModel):
     """Public verification response - confirms validity without exposing internals."""
+
     valid: bool
     certificate_number: str
     student_id: Optional[UUID] = None

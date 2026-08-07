@@ -1,11 +1,11 @@
 from typing import List
 
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.role import Role
 from app.repositories.role_repo import RoleRepository
 from app.schemas.role_schemas import RoleCreate, RoleUpdate
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class RoleService:
@@ -24,19 +24,13 @@ class RoleService:
         role = await self.repo.get_by_id(role_id)
 
         if not role:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Role with id {role_id} not found",
-            )
+            raise NotFoundError(f"Role with id {role_id} not found")
 
         return role
 
     async def create_role(self, data: RoleCreate) -> Role:
         if await self.repo.get_by_name(data.name):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Role '{data.name}' already exists",
-            )
+            raise BadRequestError(f"Role '{data.name}' already exists")
 
         return await self.repo.create(data)
 

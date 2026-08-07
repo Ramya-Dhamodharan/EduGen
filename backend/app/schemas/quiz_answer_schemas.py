@@ -13,6 +13,7 @@ class QuizAnswerCreate(BaseModel):
 
 class QuizAnswerNestedCreate(BaseModel):
     """Body for POST /quiz-attempts/{attemptId}/answers - attempt_id from path."""
+
     question_id: UUID
     selected_option: Optional[str] = None
 

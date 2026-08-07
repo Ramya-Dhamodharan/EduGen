@@ -15,16 +15,12 @@ class QuizQuestionRepository:
         question_id: uuid.UUID,
     ) -> QuizQuestion | None:
         result = await self.db.execute(
-            select(QuizQuestion).where(
-                QuizQuestion.id == question_id
-            )
+            select(QuizQuestion).where(QuizQuestion.id == question_id)
         )
         return result.scalar_one_or_none()
 
     async def get_all(self) -> list[QuizQuestion]:
-        result = await self.db.execute(
-            select(QuizQuestion)
-        )
+        result = await self.db.execute(select(QuizQuestion))
         return result.scalars().all()
 
     async def create(

@@ -1,7 +1,6 @@
 import uuid
 from typing import List, Optional
 
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.course import Course
@@ -15,6 +14,7 @@ from app.schemas.course_schemas import (
     CourseUpdate,
     CourseStatusUpdate,
 )
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class CourseService:
@@ -28,10 +28,7 @@ class CourseService:
         course = await self.repo.get_by_id(course_id)
 
         if not course:
-            raise HTTPException(
-                status.HTTP_404_NOT_FOUND,
-                f"Course {course_id} not found",
-            )
+            raise NotFoundError(f"Course {course_id} not found")
 
         return course
 
@@ -40,10 +37,7 @@ class CourseService:
         data: CourseCreate,
     ) -> Course:
         if not await self.repo.category_exists(data.category_id):
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                f"Category {data.category_id} does not exist",
-            )
+            raise BadRequestError(f"Category {data.category_id} does not exist")
 
         return await self.repo.create(data)
 

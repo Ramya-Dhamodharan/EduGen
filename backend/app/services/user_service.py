@@ -1,7 +1,5 @@
 import uuid
-from typing import List
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +16,7 @@ from app.schemas.user_schemas import (
     UserOut,
     UserUpdate,
 )
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class UserService:
@@ -46,10 +45,7 @@ class UserService:
         user = await self.repo.get_by_id(user_id)
 
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User with id '{user_id}' not found",
-            )
+            raise NotFoundError(f"User with id '{user_id}' not found")
 
         return user
 
@@ -62,16 +58,10 @@ class UserService:
     ) -> UserOut:
 
         if await self.repo.get_by_email(data.email):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Email '{data.email}' is already registered",
-            )
+            raise BadRequestError(f"Email '{data.email}' is already registered")
 
         if not await self.role_repo.get_by_id(data.role_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Role with id {data.role_id} does not exist",
-            )
+            raise BadRequestError(f"Role with id {data.role_id} does not exist")
 
         user = await self.repo.create(data)
         return self._to_user_out(user)
@@ -84,14 +74,10 @@ class UserService:
 
         user = await self.get_user(user_id)
 
-        if (
-            data.role_id is not None
-            and not await self.role_repo.get_by_id(data.role_id)
+        if data.role_id is not None and not await self.role_repo.get_by_id(
+            data.role_id
         ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Role with id {data.role_id} does not exist",
-            )
+            raise BadRequestError(f"Role with id {data.role_id} does not exist")
 
         user = await self.repo.update(user, data)
         return self._to_user_out(user)
@@ -118,10 +104,7 @@ class UserService:
         user = await self.get_user(user_id)
 
         if not await self.role_repo.get_by_id(role_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Role with id {role_id} does not exist",
-            )
+            raise BadRequestError(f"Role with id {role_id} does not exist")
 
         user.role_id = role_id
 
@@ -135,14 +118,12 @@ class UserService:
     async def list_enrollments(
         self,
         user_id: uuid.UUID,
-    ) -> List[Enrollment]:
+    ) -> list[Enrollment]:
 
         await self.get_user(user_id)
 
         result = await self.repo.db.execute(
-            select(Enrollment).where(
-                Enrollment.student_id == user_id
-            )
+            select(Enrollment).where(Enrollment.student_id == user_id)
         )
 
         return result.scalars().all()
@@ -150,14 +131,12 @@ class UserService:
     async def list_certificates(
         self,
         user_id: uuid.UUID,
-    ) -> List[Certificate]:
+    ) -> list[Certificate]:
 
         await self.get_user(user_id)
 
         result = await self.repo.db.execute(
-            select(Certificate).where(
-                Certificate.student_id == user_id
-            )
+            select(Certificate).where(Certificate.student_id == user_id)
         )
 
         return result.scalars().all()
@@ -165,14 +144,12 @@ class UserService:
     async def list_payments(
         self,
         user_id: uuid.UUID,
-    ) -> List[Payment]:
+    ) -> list[Payment]:
 
         await self.get_user(user_id)
 
         result = await self.repo.db.execute(
-            select(Payment).where(
-                Payment.student_id == user_id
-            )
+            select(Payment).where(Payment.student_id == user_id)
         )
 
         return result.scalars().all()

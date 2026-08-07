@@ -12,8 +12,8 @@ from pydantic import (
 # START QUIZ ATTEMPT
 # ==================================================
 
-class QuizAttemptCreate(BaseModel):
 
+class QuizAttemptCreate(BaseModel):
     student_id: UUID
 
     quiz_id: UUID
@@ -23,8 +23,8 @@ class QuizAttemptCreate(BaseModel):
 # UPDATE QUIZ ATTEMPT
 # ==================================================
 
-class QuizAttemptUpdate(BaseModel):
 
+class QuizAttemptUpdate(BaseModel):
     score: int | None = Field(
         default=None,
         ge=0,
@@ -37,8 +37,8 @@ class QuizAttemptUpdate(BaseModel):
 # SUBMIT QUIZ ATTEMPT
 # ==================================================
 
-class QuizAttemptSubmit(BaseModel):
 
+class QuizAttemptSubmit(BaseModel):
     score: int = Field(
         ...,
         ge=0,
@@ -49,8 +49,8 @@ class QuizAttemptSubmit(BaseModel):
 # RESPONSE
 # ==================================================
 
-class QuizAttemptResponse(BaseModel):
 
+class QuizAttemptResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
     )

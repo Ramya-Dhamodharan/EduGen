@@ -15,16 +15,12 @@ class EnrollmentRepository:
         enrollment_id: uuid.UUID,
     ) -> Enrollment | None:
         result = await self.db.execute(
-            select(Enrollment).where(
-                Enrollment.id == enrollment_id
-            )
+            select(Enrollment).where(Enrollment.id == enrollment_id)
         )
         return result.scalar_one_or_none()
 
     async def get_all(self) -> list[Enrollment]:
-        result = await self.db.execute(
-            select(Enrollment)
-        )
+        result = await self.db.execute(select(Enrollment))
         return result.scalars().all()
 
     async def get_by_student_id(
@@ -32,9 +28,7 @@ class EnrollmentRepository:
         student_id: uuid.UUID,
     ) -> list[Enrollment]:
         result = await self.db.execute(
-            select(Enrollment).where(
-                Enrollment.student_id == student_id
-            )
+            select(Enrollment).where(Enrollment.student_id == student_id)
         )
         return result.scalars().all()
 

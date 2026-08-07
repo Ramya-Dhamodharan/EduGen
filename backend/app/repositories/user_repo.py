@@ -17,9 +17,7 @@ class UserRepository:
         self.db = db
 
     async def get_all(self) -> List[User]:
-        result = await self.db.execute(
-            select(User).options(selectinload(User.role))
-        )
+        result = await self.db.execute(select(User).options(selectinload(User.role)))
         return result.scalars().all()
 
     async def get_by_id(
@@ -27,9 +25,7 @@ class UserRepository:
         user_id: uuid.UUID,
     ) -> Optional[User]:
         result = await self.db.execute(
-            select(User)
-            .options(selectinload(User.role))
-            .where(User.id == user_id)
+            select(User).options(selectinload(User.role)).where(User.id == user_id)
         )
         return result.scalar_one_or_none()
 
@@ -38,9 +34,7 @@ class UserRepository:
         email: str,
     ) -> Optional[User]:
         result = await self.db.execute(
-            select(User)
-            .options(selectinload(User.role))
-            .where(User.email == email)
+            select(User).options(selectinload(User.role)).where(User.email == email)
         )
         return result.scalar_one_or_none()
 

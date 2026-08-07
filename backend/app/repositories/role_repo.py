@@ -16,28 +16,18 @@ class RoleRepository:
         self.db = db
 
     async def get_all(self) -> List[Role]:
-        result = await self.db.execute(
-            select(Role)
-        )
+        result = await self.db.execute(select(Role))
         return result.scalars().all()
 
     async def get_by_id(
         self,
         role_id: int,
     ) -> Optional[Role]:
-        result = await self.db.execute(
-            select(Role).where(Role.id == role_id)
-        )
+        result = await self.db.execute(select(Role).where(Role.id == role_id))
         return result.scalar_one_or_none()
 
-    async def get_by_name(
-        self,
-        name: str,
-    ) -> Optional[Role]:
-        # Case-insensitive so "student" also matches a "Student" row.
-        result = await self.db.execute(
-            select(Role).where(Role.name.ilike(name))
-        )
+    async def get_by_name(self, name: str) -> Optional[Role]:
+        result = await self.db.execute(select(Role).where(Role.name == name.lower()))
         return result.scalar_one_or_none()
 
     async def create(

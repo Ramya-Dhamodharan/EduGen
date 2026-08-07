@@ -17,14 +17,14 @@ from app.services.lesson_service import LessonService
 router = APIRouter(dependencies=[Depends(require_non_admin)])
 
 
-@router.get("", response_model=List[LessonOut])
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[LessonOut])
 async def list_lessons(
     db: AsyncSession = Depends(get_db),
 ):
     return await LessonService(db).list_lessons()
 
 
-@router.get("/{lesson_id}", response_model=LessonOut)
+@router.get("/{lesson_id}", status_code=status.HTTP_200_OK, response_model=LessonOut)
 async def get_lesson(
     lesson_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -47,6 +47,7 @@ async def create_lesson(
 
 @router.put(
     "/{lesson_id}",
+    status_code=status.HTTP_200_OK,
     response_model=LessonOut,
     dependencies=[Depends(require_instructor)],
 )

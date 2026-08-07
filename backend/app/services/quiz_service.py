@@ -1,7 +1,6 @@
 import uuid
 from typing import List
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +11,7 @@ from app.models.quiz import Quiz
 from app.models.quiz_question import QuizQuestion
 from app.repositories.quiz_repo import QuizRepository
 from app.schemas.quiz_schemas import QuizCreate, QuizUpdate
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class QuizService:
@@ -23,10 +23,7 @@ class QuizService:
         quiz = await self.quiz_repo.get_by_id(quiz_id)
 
         if quiz is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Quiz not found",
-            )
+            raise NotFoundError("Quiz not found")
 
         return quiz
 
@@ -44,17 +41,12 @@ class QuizService:
         return await self.quiz_repo.get_questions(quiz_id)
 
     async def _validate_course(self, course_id: uuid.UUID) -> Course:
-        result = await self.db.execute(
-            select(Course).where(Course.id == course_id)
-        )
+        result = await self.db.execute(select(Course).where(Course.id == course_id))
 
         course = result.scalar_one_or_none()
 
         if course is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Course not found",
-            )
+            raise NotFoundError("Course not found")
 
         return course
 
@@ -75,10 +67,7 @@ class QuizService:
         lesson = result.scalar_one_or_none()
 
         if lesson is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Lesson does not belong to the specified course.",
-            )
+            raise BadRequestError("Lesson does not belong to the specified course.")
 
         return lesson
 

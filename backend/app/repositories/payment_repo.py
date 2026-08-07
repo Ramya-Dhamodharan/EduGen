@@ -14,17 +14,11 @@ class PaymentRepository:
         self,
         payment_id: uuid.UUID,
     ) -> Payment | None:
-        result = await self.db.execute(
-            select(Payment).where(
-                Payment.id == payment_id
-            )
-        )
+        result = await self.db.execute(select(Payment).where(Payment.id == payment_id))
         return result.scalar_one_or_none()
 
     async def get_all(self) -> list[Payment]:
-        result = await self.db.execute(
-            select(Payment)
-        )
+        result = await self.db.execute(select(Payment))
         return result.scalars().all()
 
     async def get_by_student_id(
@@ -32,9 +26,7 @@ class PaymentRepository:
         student_id: uuid.UUID,
     ) -> list[Payment]:
         result = await self.db.execute(
-            select(Payment).where(
-                Payment.student_id == student_id
-            )
+            select(Payment).where(Payment.student_id == student_id)
         )
         return result.scalars().all()
 
@@ -43,9 +35,7 @@ class PaymentRepository:
         transaction_id: str,
     ) -> Payment | None:
         result = await self.db.execute(
-            select(Payment).where(
-                Payment.transaction_id == transaction_id
-            )
+            select(Payment).where(Payment.transaction_id == transaction_id)
         )
         return result.scalar_one_or_none()
 

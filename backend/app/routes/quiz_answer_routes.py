@@ -27,9 +27,7 @@ async def _owner_of_answer(
     db: AsyncSession,
     attempt_id: uuid.UUID,
 ) -> uuid.UUID | None:
-    result = await db.execute(
-        select(QuizAttempt).where(QuizAttempt.id == attempt_id)
-    )
+    result = await db.execute(select(QuizAttempt).where(QuizAttempt.id == attempt_id))
     attempt = result.scalar_one_or_none()
     return attempt.student_id if attempt else None
 
@@ -37,6 +35,7 @@ async def _owner_of_answer(
 # ---- Instructor only: list all answers (for grading/review) ----
 @router.get(
     "",
+    status_code=status.HTTP_200_OK,
     response_model=List[QuizAnswerOut],
     dependencies=[Depends(require_instructor)],
 )
@@ -47,7 +46,9 @@ async def list_answers(
 
 
 # ---- Owner (student) or Instructor: view one ----
-@router.get("/{answer_id}", response_model=QuizAnswerOut)
+@router.get(
+    "/{answer_id}", status_code=status.HTTP_200_OK, response_model=QuizAnswerOut
+)
 async def get_answer(
     answer_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -109,7 +110,12 @@ async def submit_answer(
 
 
 # ---- Owner (student) only: update their own answer ----
-@router.put("/{answer_id}", response_model=QuizAnswerOut, dependencies=[Depends(require_student)])
+@router.put(
+    "/{answer_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=QuizAnswerOut,
+    dependencies=[Depends(require_student)],
+)
 async def update_answer(
     answer_id: uuid.UUID,
     payload: QuizAnswerUpdate,

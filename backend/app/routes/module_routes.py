@@ -19,14 +19,14 @@ from app.services.module_service import ModuleService
 router = APIRouter(dependencies=[Depends(require_non_admin)])
 
 
-@router.get("", response_model=List[ModuleOut])
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[ModuleOut])
 async def list_modules(
     db: AsyncSession = Depends(get_db),
 ):
     return await ModuleService(db).list_modules()
 
 
-@router.get("/{module_id}", response_model=ModuleOut)
+@router.get("/{module_id}", status_code=status.HTTP_200_OK, response_model=ModuleOut)
 async def get_module(
     module_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -49,6 +49,7 @@ async def create_module(
 
 @router.put(
     "/{module_id}",
+    status_code=status.HTTP_200_OK,
     response_model=ModuleOut,
     dependencies=[Depends(require_instructor)],
 )
@@ -75,7 +76,11 @@ async def delete_module(
     await ModuleService(db).delete_module(module_id)
 
 
-@router.get("/{module_id}/lessons", response_model=List[LessonOut])
+@router.get(
+    "/{module_id}/lessons",
+    status_code=status.HTTP_200_OK,
+    response_model=List[LessonOut],
+)
 async def list_lessons_in_module(
     module_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

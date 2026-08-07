@@ -32,14 +32,16 @@ def _ensure_author_or_instructor(user: User, author_id: uuid.UUID) -> None:
     )
 
 
-@router.get("", response_model=List[CourseReviewOut])
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[CourseReviewOut])
 async def list_reviews(
     db: AsyncSession = Depends(get_db),
 ):
     return await CourseReviewService(db).list_all()
 
 
-@router.get("/{review_id}", response_model=CourseReviewOut)
+@router.get(
+    "/{review_id}", status_code=status.HTTP_200_OK, response_model=CourseReviewOut
+)
 async def get_review(
     review_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -66,7 +68,9 @@ async def create_review(
 
 
 # ---- Author (student) or Instructor: update (moderation) ----
-@router.put("/{review_id}", response_model=CourseReviewOut)
+@router.put(
+    "/{review_id}", status_code=status.HTTP_200_OK, response_model=CourseReviewOut
+)
 async def update_review(
     review_id: uuid.UUID,
     payload: CourseReviewUpdate,

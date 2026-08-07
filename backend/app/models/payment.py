@@ -9,7 +9,6 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
-    Index,
     Numeric,
     PrimaryKeyConstraint,
     String,
@@ -27,11 +26,13 @@ if TYPE_CHECKING:
     from app.models.user import User
     from app.models.course import Course
 
+
 class PaymentMethod(str, Enum):
     CARD = "CARD"
     UPI = "UPI"
     NET_BANKING = "NET_BANKING"
     WALLET = "WALLET"
+
 
 class PaymentStatus(str, Enum):
     PENDING = "PENDING"
@@ -52,12 +53,10 @@ class Payment(Base):
             "id",
             name="pk_payments",
         ),
-
         UniqueConstraint(
             "transaction_id",
             name="uq_payments_transaction_id",
         ),
-
         CheckConstraint(
             "amount > 0",
             name="ck_payments_amount_positive",
@@ -194,6 +193,4 @@ class Payment(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Payment(id={self.id}, transaction_id='{self.transaction_id}')>"
-        )
+        return f"<Payment(id={self.id}, transaction_id='{self.transaction_id}')>"

@@ -11,7 +11,6 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
-    Index,
     Numeric,
     PrimaryKeyConstraint,
     UniqueConstraint,
@@ -26,6 +25,7 @@ if TYPE_CHECKING:
     from app.models.quiz_attempt import QuizAttempt
     from app.models.quiz_question import QuizQuestion
 
+
 class QuizAnswer(Base):
     """
     Stores student answers for each quiz question.
@@ -38,18 +38,15 @@ class QuizAnswer(Base):
             "id",
             name="pk_quiz_answers",
         ),
-
         UniqueConstraint(
             "attempt_id",
             "question_id",
             name="uq_quiz_answers_attempt_question",
         ),
-
         CheckConstraint(
             "selected_option IN ('A','B','C','D')",
             name="ck_quiz_answers_selected_option",
         ),
-
         CheckConstraint(
             "marks_obtained >= 0",
             name="ck_quiz_answers_marks_positive",
@@ -155,6 +152,4 @@ class QuizAnswer(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<QuizAnswer(id={self.id}, attempt_id={self.attempt_id})>"
-        )
+        return f"<QuizAnswer(id={self.id}, attempt_id={self.attempt_id})>"

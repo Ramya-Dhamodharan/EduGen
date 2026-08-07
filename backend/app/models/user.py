@@ -9,7 +9,6 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
-    Index,
     Integer,
     PrimaryKeyConstraint,
     String,
@@ -35,12 +34,10 @@ class User(Base):
 
     __table_args__ = (
         PrimaryKeyConstraint("id", name="pk_users"),
-
         UniqueConstraint(
             "email",
             name="uq_users_email",
         ),
-
         CheckConstraint(
             "char_length(username) >= 3",
             name="ck_users_username_length",

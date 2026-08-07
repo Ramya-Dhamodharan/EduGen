@@ -37,7 +37,6 @@ class Module(Base):
             "id",
             name="pk_modules",
         ),
-
         Index(
             "ix_modules_course_id",
             "course_id",

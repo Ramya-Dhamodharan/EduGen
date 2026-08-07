@@ -11,7 +11,6 @@ from sqlalchemy import (
     Index,
     PrimaryKeyConstraint,
     String,
-    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID

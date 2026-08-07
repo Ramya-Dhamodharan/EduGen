@@ -40,6 +40,7 @@ def _ensure_owner_or_instructor(user: User, owner_id: uuid.UUID) -> None:
 # ---- Instructor only: list all attempts ----
 @router.get(
     "",
+    status_code=status.HTTP_200_OK,
     response_model=List[QuizAttemptOut],
     dependencies=[Depends(require_instructor)],
 )
@@ -50,7 +51,12 @@ async def list_attempts(
 
 
 # ---- Student only: look up their own in-progress attempt(s) ----
-@router.get("/in-progress", response_model=List[QuizAttemptOut], dependencies=[Depends(require_student)])
+@router.get(
+    "/in-progress",
+    status_code=status.HTTP_200_OK,
+    response_model=List[QuizAttemptOut],
+    dependencies=[Depends(require_student)],
+)
 async def list_in_progress_attempts(
     quiz_id: uuid.UUID | None = None,
     db: AsyncSession = Depends(get_db),
@@ -63,7 +69,9 @@ async def list_in_progress_attempts(
 
 
 # ---- Owner (student) or Instructor: view one ----
-@router.get("/{attempt_id}", response_model=QuizAttemptOut)
+@router.get(
+    "/{attempt_id}", status_code=status.HTTP_200_OK, response_model=QuizAttemptOut
+)
 async def get_attempt(
     attempt_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -99,7 +107,12 @@ async def start_attempt(
 
 
 # ---- Owner (student) only: update their own attempt ----
-@router.put("/{attempt_id}", response_model=QuizAttemptOut, dependencies=[Depends(require_student)])
+@router.put(
+    "/{attempt_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=QuizAttemptOut,
+    dependencies=[Depends(require_student)],
+)
 async def update_attempt(
     attempt_id: uuid.UUID,
     payload: QuizAttemptUpdate,
@@ -121,7 +134,12 @@ async def update_attempt(
 
 
 # ---- Owner (student) only: submit & score their own attempt ----
-@router.patch("/{attempt_id}/submit", response_model=QuizAttemptOut, dependencies=[Depends(require_student)])
+@router.patch(
+    "/{attempt_id}/submit",
+    status_code=status.HTTP_200_OK,
+    response_model=QuizAttemptOut,
+    dependencies=[Depends(require_student)],
+)
 async def submit_attempt(
     attempt_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -141,6 +159,7 @@ async def submit_attempt(
 # ---- Instructor only: gives feedback on a submitted attempt ----
 @router.patch(
     "/{attempt_id}/feedback",
+    status_code=status.HTTP_200_OK,
     response_model=QuizAttemptOut,
     dependencies=[Depends(require_instructor)],
 )
@@ -160,6 +179,7 @@ async def give_attempt_feedback(
 # ---- Owner (student) or Instructor: list answers ----
 @router.get(
     "/{attempt_id}/answers",
+    status_code=status.HTTP_200_OK,
     response_model=List[QuizAnswerOut],
 )
 async def list_attempt_answers(

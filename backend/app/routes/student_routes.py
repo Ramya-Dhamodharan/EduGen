@@ -30,7 +30,11 @@ def _ensure_owner_or_instructor(user: User, student_id: uuid.UUID) -> None:
 
 
 # The student themselves, or Instructor.
-@router.get("/{student_id}/enrollments", response_model=List[EnrollmentOut])
+@router.get(
+    "/{student_id}/enrollments",
+    status_code=status.HTTP_200_OK,
+    response_model=List[EnrollmentOut],
+)
 async def list_student_enrollments(
     student_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -41,7 +45,11 @@ async def list_student_enrollments(
 
 
 # The student themselves, or Instructor.
-@router.get("/{student_id}/quiz-attempts", response_model=List[QuizAttemptOut])
+@router.get(
+    "/{student_id}/quiz-attempts",
+    status_code=status.HTTP_200_OK,
+    response_model=List[QuizAttemptOut],
+)
 async def list_student_attempts(
     student_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -52,7 +60,11 @@ async def list_student_attempts(
 
 
 # The student themselves, or Instructor.
-@router.get("/{student_id}/certificates", response_model=List[CertificateOut])
+@router.get(
+    "/{student_id}/certificates",
+    status_code=status.HTTP_200_OK,
+    response_model=List[CertificateOut],
+)
 async def list_student_certificates(
     student_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -63,7 +75,11 @@ async def list_student_certificates(
 
 
 # The student themselves, or Instructor.
-@router.get("/{student_id}/payments", response_model=List[PaymentOut])
+@router.get(
+    "/{student_id}/payments",
+    status_code=status.HTTP_200_OK,
+    response_model=List[PaymentOut],
+)
 async def list_student_payments(
     student_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

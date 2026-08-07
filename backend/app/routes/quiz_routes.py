@@ -26,14 +26,14 @@ from app.services.quiz_service import QuizService
 router = APIRouter(dependencies=[Depends(require_non_admin)])
 
 
-@router.get("", response_model=List[QuizOut])
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[QuizOut])
 async def list_quizzes(
     db: AsyncSession = Depends(get_db),
 ):
     return await QuizService(db).list_all()
 
 
-@router.get("/{quiz_id}", response_model=QuizOut)
+@router.get("/{quiz_id}", status_code=status.HTTP_200_OK, response_model=QuizOut)
 async def get_quiz(
     quiz_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -41,7 +41,11 @@ async def get_quiz(
     return await QuizService(db).get(quiz_id)
 
 
-@router.get("/{quiz_id}/questions", response_model=List[QuizQuestionOut])
+@router.get(
+    "/{quiz_id}/questions",
+    status_code=status.HTTP_200_OK,
+    response_model=List[QuizQuestionOut],
+)
 async def list_quiz_questions(
     quiz_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -68,6 +72,7 @@ async def create_quiz(
 
 @router.put(
     "/{quiz_id}",
+    status_code=status.HTTP_200_OK,
     response_model=QuizOut,
     dependencies=[Depends(require_instructor)],
 )

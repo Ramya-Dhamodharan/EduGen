@@ -22,9 +22,7 @@ class CourseRepository:
         return result.scalars().all()
 
     async def get_by_id(self, course_id: uuid.UUID) -> Optional[Course]:
-        result = await self.db.execute(
-            select(Course).where(Course.id == course_id)
-        )
+        result = await self.db.execute(select(Course).where(Course.id == course_id))
         return result.scalar_one_or_none()
 
     async def category_exists(self, category_id: uuid.UUID) -> bool:
@@ -42,7 +40,11 @@ class CourseRepository:
 
         return course
 
-    async def update(self,course: Course,data: CourseUpdate,) -> Course:
+    async def update(
+        self,
+        course: Course,
+        data: CourseUpdate,
+    ) -> Course:
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(course, field, value)
 
@@ -51,7 +53,11 @@ class CourseRepository:
 
         return course
 
-    async def update_status(self,course: Course,is_active: bool,) -> Course:
+    async def update_status(
+        self,
+        course: Course,
+        is_active: bool,
+    ) -> Course:
         course.is_active = is_active
 
         await self.db.commit()
@@ -77,9 +83,7 @@ class CourseRepository:
         course_id: uuid.UUID,
     ) -> List[CourseReview]:
         result = await self.db.execute(
-            select(CourseReview).where(
-                CourseReview.course_id == course_id
-            )
+            select(CourseReview).where(CourseReview.course_id == course_id)
         )
         return result.scalars().all()
 
@@ -87,9 +91,7 @@ class CourseRepository:
         self,
         course_id: uuid.UUID,
     ) -> List[Quiz]:
-        result = await self.db.execute(
-            select(Quiz).where(Quiz.course_id == course_id)
-        )
+        result = await self.db.execute(select(Quiz).where(Quiz.course_id == course_id))
         return result.scalars().all()
 
     async def get_enrollments(
@@ -97,9 +99,7 @@ class CourseRepository:
         course_id: uuid.UUID,
     ) -> List[Enrollment]:
         result = await self.db.execute(
-            select(Enrollment).where(
-                Enrollment.course_id == course_id
-            )
+            select(Enrollment).where(Enrollment.course_id == course_id)
         )
         return result.scalars().all()
 
@@ -113,24 +113,16 @@ class CourseRepository:
         stmt = select(Course)
 
         if query:
-            stmt = stmt.where(
-                Course.title.ilike(f"%{query}%")
-            )
+            stmt = stmt.where(Course.title.ilike(f"%{query}%"))
 
         if category:
-            stmt = stmt.where(
-                Course.category_id == category
-            )
+            stmt = stmt.where(Course.category_id == category)
 
         if level:
-            stmt = stmt.where(
-                Course.level == level
-            )
+            stmt = stmt.where(Course.level == level)
 
         if language:
-            stmt = stmt.where(
-                Course.language == language
-            )
+            stmt = stmt.where(Course.language == language)
 
         result = await self.db.execute(stmt)
         return result.scalars().all()

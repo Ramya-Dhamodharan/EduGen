@@ -16,9 +16,7 @@ class QuizAttemptRepository:
         attempt_id: uuid.UUID,
     ) -> QuizAttempt | None:
         result = await self.db.execute(
-            select(QuizAttempt).where(
-                QuizAttempt.id == attempt_id
-            )
+            select(QuizAttempt).where(QuizAttempt.id == attempt_id)
         )
         return result.scalar_one_or_none()
 
@@ -49,30 +47,21 @@ class QuizAttemptRepository:
     ) -> list[QuizAttempt]:
         """All of a student's unfinished attempts (optionally for one quiz)."""
 
-        stmt = (
-            select(QuizAttempt)
-            .where(
-                QuizAttempt.student_id == student_id,
-                QuizAttempt.status == QuizAttemptStatus.IN_PROGRESS,
-            )
+        stmt = select(QuizAttempt).where(
+            QuizAttempt.student_id == student_id,
+            QuizAttempt.status == QuizAttemptStatus.IN_PROGRESS,
         )
 
         if quiz_id is not None:
-            stmt = stmt.where(
-                QuizAttempt.quiz_id == quiz_id
-            )
+            stmt = stmt.where(QuizAttempt.quiz_id == quiz_id)
 
-        stmt = stmt.order_by(
-            QuizAttempt.started_at.desc()
-        )
+        stmt = stmt.order_by(QuizAttempt.started_at.desc())
 
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
     async def get_all(self) -> list[QuizAttempt]:
-        result = await self.db.execute(
-            select(QuizAttempt)
-        )
+        result = await self.db.execute(select(QuizAttempt))
         return result.scalars().all()
 
     async def get_by_student_id(
@@ -80,9 +69,7 @@ class QuizAttemptRepository:
         student_id: uuid.UUID,
     ) -> list[QuizAttempt]:
         result = await self.db.execute(
-            select(QuizAttempt).where(
-                QuizAttempt.student_id == student_id
-            )
+            select(QuizAttempt).where(QuizAttempt.student_id == student_id)
         )
         return result.scalars().all()
 
@@ -91,9 +78,7 @@ class QuizAttemptRepository:
         attempt_id: uuid.UUID,
     ) -> list[QuizAnswer]:
         result = await self.db.execute(
-            select(QuizAnswer).where(
-                QuizAnswer.attempt_id == attempt_id
-            )
+            select(QuizAnswer).where(QuizAnswer.attempt_id == attempt_id)
         )
         return result.scalars().all()
 

@@ -2,7 +2,6 @@ import uuid
 from decimal import Decimal
 from typing import List
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +9,7 @@ from app.models.quiz_answer import QuizAnswer
 from app.models.quiz_attempt import QuizAttempt, QuizAttemptStatus
 from app.models.quiz_question import QuizQuestion
 from app.repositories.quiz_answer_repo import QuizAnswerRepository
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class QuizAnswerService:
@@ -21,10 +21,7 @@ class QuizAnswerService:
         answer = await self.answer_repo.get_by_id(answer_id)
 
         if not answer:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Answer {answer_id} not found",
-            )
+            raise NotFoundError(f"Answer {answer_id} not found")
 
         return answer
 
@@ -41,17 +38,12 @@ class QuizAnswerService:
     ) -> tuple[bool, Decimal]:
 
         result = await self.db.execute(
-            select(QuizQuestion).where(
-                QuizQuestion.id == question_id
-            )
+            select(QuizQuestion).where(QuizQuestion.id == question_id)
         )
         question = result.scalar_one_or_none()
 
         if not question:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Question {question_id} does not exist",
-            )
+            raise BadRequestError(f"Question {question_id} does not exist")
 
         is_correct = (
             selected_option is not None
@@ -59,11 +51,7 @@ class QuizAnswerService:
             == question.correct_option.strip().upper()
         )
 
-        marks = (
-            Decimal(str(question.marks))
-            if is_correct
-            else Decimal("0")
-        )
+        marks = Decimal(str(question.marks)) if is_correct else Decimal("0")
 
         return is_correct, marks
 
@@ -76,22 +64,16 @@ class QuizAnswerService:
     ) -> QuizAnswer:
 
         result = await self.db.execute(
-            select(QuizAttempt).where(
-                QuizAttempt.id == attempt_id
-            )
+            select(QuizAttempt).where(QuizAttempt.id == attempt_id)
         )
         attempt = result.scalar_one_or_none()
 
         if not attempt:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Attempt {attempt_id} does not exist",
-            )
+            raise BadRequestError(f"Attempt {attempt_id} does not exist")
 
         if attempt.status == QuizAttemptStatus.COMPLETED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This quiz has already been submitted and cannot be modified.",
+            raise BadRequestError(
+                "This quiz has already been submitted and cannot be modified."
             )
 
         result = await self.db.execute(
@@ -103,12 +85,11 @@ class QuizAnswerService:
         existing = result.scalar_one_or_none()
 
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
+            raise BadRequestError(
+                (
                     "This question has already been answered for this attempt. "
                     "Use PUT /api/quiz-answers/{id} to change the answer."
-                ),
+                )
             )
 
         is_correct, marks = await self._grade(
@@ -136,9 +117,8 @@ class QuizAnswerService:
         answer = await self._get(answer_id)
 
         if answer.attempt.status == QuizAttemptStatus.COMPLETED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This quiz has already been submitted and cannot be modified.",
+            raise BadRequestError(
+                "This quiz has already been submitted and cannot be modified."
             )
 
         is_correct, marks = await self._grade(

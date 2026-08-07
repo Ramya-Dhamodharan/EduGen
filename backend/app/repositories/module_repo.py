@@ -22,18 +22,14 @@ class ModuleRepository:
         self,
         module_id: uuid.UUID,
     ) -> Optional[Module]:
-        result = await self.db.execute(
-            select(Module).where(Module.id == module_id)
-        )
+        result = await self.db.execute(select(Module).where(Module.id == module_id))
         return result.scalar_one_or_none()
 
     async def course_exists(
         self,
         course_id: uuid.UUID,
     ) -> bool:
-        result = await self.db.execute(
-            select(Course).where(Course.id == course_id)
-        )
+        result = await self.db.execute(select(Course).where(Course.id == course_id))
         return result.scalar_one_or_none() is not None
 
     async def create(
@@ -91,8 +87,6 @@ class ModuleRepository:
         module_id: uuid.UUID,
     ) -> List[Lesson]:
         result = await self.db.execute(
-            select(Lesson).where(
-                Lesson.module_id == module_id
-            )
+            select(Lesson).where(Lesson.module_id == module_id)
         )
         return result.scalars().all()

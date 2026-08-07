@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     Central place for all environment-driven configuration.
     Values are loaded from the .env file at project root.
     """
+
     APP_NAME: str = "EduGen"
     DEBUG: bool = True
 

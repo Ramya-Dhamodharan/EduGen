@@ -34,7 +34,12 @@ def _ensure_owner_or_instructor(user: User, owner_id: uuid.UUID) -> None:
 
 
 # ---- Instructor only: list all ----
-@router.get("", response_model=List[EnrollmentOut], dependencies=[Depends(require_instructor)])
+@router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+    response_model=List[EnrollmentOut],
+    dependencies=[Depends(require_instructor)],
+)
 async def list_enrollments(
     db: AsyncSession = Depends(get_db),
 ):
@@ -42,7 +47,9 @@ async def list_enrollments(
 
 
 # ---- Owner (student) or Instructor: view one ----
-@router.get("/{enrollment_id}", response_model=EnrollmentOut)
+@router.get(
+    "/{enrollment_id}", status_code=status.HTTP_200_OK, response_model=EnrollmentOut
+)
 async def get_enrollment(
     enrollment_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -54,8 +61,12 @@ async def get_enrollment(
 
 
 # ---- Student only: self-enrolls ----
-@router.post("", response_model=EnrollmentOut, status_code=status.HTTP_201_CREATED,
-             dependencies=[Depends(require_student)])
+@router.post(
+    "",
+    response_model=EnrollmentOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_student)],
+)
 async def create_enrollment(
     payload: EnrollmentCreate,
     db: AsyncSession = Depends(get_db),
@@ -70,6 +81,7 @@ async def create_enrollment(
 # ---- Instructor only: update ----
 @router.put(
     "/{enrollment_id}",
+    status_code=status.HTTP_200_OK,
     response_model=EnrollmentOut,
     dependencies=[Depends(require_instructor)],
 )
@@ -98,7 +110,11 @@ async def delete_enrollment(
 
 
 # ---- Owner (student) or Instructor: progress ----
-@router.patch("/{enrollment_id}/progress", response_model=EnrollmentOut)
+@router.patch(
+    "/{enrollment_id}/progress",
+    status_code=status.HTTP_200_OK,
+    response_model=EnrollmentOut,
+)
 async def update_progress(
     enrollment_id: uuid.UUID,
     payload: EnrollmentProgressUpdate,
@@ -119,7 +135,11 @@ async def update_progress(
 
 
 # ---- Owner (student) or Instructor: complete ----
-@router.patch("/{enrollment_id}/complete", response_model=EnrollmentOut)
+@router.patch(
+    "/{enrollment_id}/complete",
+    status_code=status.HTTP_200_OK,
+    response_model=EnrollmentOut,
+)
 async def mark_complete(
     enrollment_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

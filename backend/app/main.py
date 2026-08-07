@@ -2,34 +2,37 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.core.redis import redis    
+from app.core.redis import redis
+from app.middleware import AuthMiddleware
+from app.seed.seed_data import seed_database
+from app.utils.exception_handlers import register_exception_handlers
+
 
 # Import all models so SQLAlchemy registers every mapper at startup
 import app.models  # noqa: F401
 
 from contextlib import asynccontextmanager
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
     await redis.ping()
     print("Redis Connected")
-
+    await seed_database()
     yield
-
     await redis.aclose()
 
 
-app = FastAPI(
-    title=settings.APP_NAME,
-    debug=settings.DEBUG,
-    lifespan=lifespan
-)
+app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan)
 
+register_exception_handlers(app)
 
 # ==================================================
 # CORS CONFIGURATION
 # ==================================================
+
+app.add_middleware(AuthMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,12 +49,10 @@ app.add_middleware(
 # ROOT
 # ==================================================
 
+
 @app.get("/")
 async def root():
-    return {
-        "message": f"{settings.APP_NAME} API is running"
-    }
-
+    return {"message": f"{settings.APP_NAME} API is running"}
 
 
 # ==================================================
@@ -84,10 +85,20 @@ app.include_router(module_router, prefix="/api/modules", tags=["Modules"])
 app.include_router(lesson_router, prefix="/api/lessons", tags=["Lessons"])
 app.include_router(enrollment_router, prefix="/api/enrollments", tags=["Enrollments"])
 app.include_router(quiz_router, prefix="/api/quizzes", tags=["Quizzes"])
-app.include_router(quiz_question_router, prefix="/api/quiz-questions", tags=["Quiz Questions"])
-app.include_router(quiz_attempt_router, prefix="/api/quiz-attempts", tags=["Quiz Attempts"])
-app.include_router(quiz_answer_router, prefix="/api/quiz-answers", tags=["Quiz Answers"])
-app.include_router(certificate_router, prefix="/api/certificates", tags=["Certificates"])
-app.include_router(course_review_router, prefix="/api/course-reviews", tags=["Course Reviews"])
+app.include_router(
+    quiz_question_router, prefix="/api/quiz-questions", tags=["Quiz Questions"]
+)
+app.include_router(
+    quiz_attempt_router, prefix="/api/quiz-attempts", tags=["Quiz Attempts"]
+)
+app.include_router(
+    quiz_answer_router, prefix="/api/quiz-answers", tags=["Quiz Answers"]
+)
+app.include_router(
+    certificate_router, prefix="/api/certificates", tags=["Certificates"]
+)
+app.include_router(
+    course_review_router, prefix="/api/course-reviews", tags=["Course Reviews"]
+)
 app.include_router(payment_router, prefix="/api/payments", tags=["Payments"])
 app.include_router(student_router, prefix="/api/students", tags=["Students"])

@@ -35,7 +35,7 @@ def _ensure_owner_or_instructor(user: User, owner_id: uuid.UUID) -> None:
 
 
 # ---- Gateway webhook: NO auth ----
-@router.post("/webhook")
+@router.post("/webhook", status_code=status.HTTP_200_OK)
 async def payment_webhook(
     payload: PaymentWebhook,
     db: AsyncSession = Depends(get_db),
@@ -51,6 +51,7 @@ async def payment_webhook(
 # ---- Instructor only: list all ----
 @router.get(
     "",
+    status_code=status.HTTP_200_OK,
     response_model=List[PaymentOut],
     dependencies=[Depends(require_instructor)],
 )
@@ -61,7 +62,7 @@ async def list_payments(
 
 
 # ---- Owner (student) or Instructor: view one ----
-@router.get("/{payment_id}", response_model=PaymentOut)
+@router.get("/{payment_id}", status_code=status.HTTP_200_OK, response_model=PaymentOut)
 async def get_payment(
     payment_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -96,7 +97,9 @@ async def initiate_payment(
 
 
 # ---- Status update (webhook-style): NO user auth ----
-@router.patch("/{payment_id}/status", response_model=PaymentOut)
+@router.patch(
+    "/{payment_id}/status", status_code=status.HTTP_200_OK, response_model=PaymentOut
+)
 async def update_payment_status(
     payment_id: uuid.UUID,
     payload: PaymentStatusUpdate,
@@ -111,7 +114,9 @@ async def update_payment_status(
 
 
 # ---- Owner (student) or Instructor: receipt ----
-@router.get("/{payment_id}/receipt", response_model=ReceiptOut)
+@router.get(
+    "/{payment_id}/receipt", status_code=status.HTTP_200_OK, response_model=ReceiptOut
+)
 async def get_receipt(
     payment_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

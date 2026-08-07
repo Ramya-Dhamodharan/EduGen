@@ -21,7 +21,7 @@ from app.services.module_service import ModuleService
 router = APIRouter(dependencies=[Depends(require_non_admin)])
 
 
-@router.get("/search", response_model=List[CourseOut])
+@router.get("/search", status_code=status.HTTP_200_OK, response_model=List[CourseOut])
 async def search_courses(
     query: Optional[str] = None,
     category: Optional[uuid.UUID] = None,
@@ -37,14 +37,14 @@ async def search_courses(
     )
 
 
-@router.get("", response_model=List[CourseOut])
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[CourseOut])
 async def list_courses(
     db: AsyncSession = Depends(get_db),
 ):
     return await CourseService(db).list_courses()
 
 
-@router.get("/{course_id}", response_model=CourseOut)
+@router.get("/{course_id}", status_code=status.HTTP_200_OK, response_model=CourseOut)
 async def get_course(
     course_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -67,6 +67,7 @@ async def create_course(
 
 @router.put(
     "/{course_id}",
+    status_code=status.HTTP_200_OK,
     response_model=CourseOut,
     dependencies=[Depends(require_instructor)],
 )
@@ -83,6 +84,7 @@ async def update_course(
 
 @router.patch(
     "/{course_id}/status",
+    status_code=status.HTTP_200_OK,
     response_model=CourseOut,
     dependencies=[Depends(require_instructor)],
 )
@@ -109,7 +111,11 @@ async def delete_course(
     await CourseService(db).delete_course(course_id)
 
 
-@router.get("/{course_id}/modules", response_model=List[ModuleOut])
+@router.get(
+    "/{course_id}/modules",
+    status_code=status.HTTP_200_OK,
+    response_model=List[ModuleOut],
+)
 async def list_modules_in_course(
     course_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -135,7 +141,7 @@ async def create_module_under_course(
     )
 
 
-@router.get("/{course_id}/reviews")
+@router.get("/{course_id}/reviews", status_code=status.HTTP_200_OK)
 async def list_reviews_for_course(
     course_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -153,7 +159,7 @@ async def list_reviews_for_course(
     ]
 
 
-@router.get("/{course_id}/quizzes")
+@router.get("/{course_id}/quizzes", status_code=status.HTTP_200_OK)
 async def list_quizzes_for_course(
     course_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -173,6 +179,7 @@ async def list_quizzes_for_course(
 
 @router.get(
     "/{course_id}/enrollments",
+    status_code=status.HTTP_200_OK,
     dependencies=[Depends(require_instructor)],
 )
 async def list_enrollments_for_course(

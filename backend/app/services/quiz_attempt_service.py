@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +15,7 @@ from app.models.quiz_attempt import (
     SubmissionStatus,
 )
 from app.repositories.quiz_attempt_repo import QuizAttemptRepository
+from app.utils.exceptions import BadRequestError, NotFoundError
 
 
 class QuizAttemptService:
@@ -27,10 +27,7 @@ class QuizAttemptService:
         attempt = await self.attempt_repo.get_by_id(attempt_id)
 
         if not attempt:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Attempt {attempt_id} not found",
-            )
+            raise NotFoundError(f"Attempt {attempt_id} not found")
 
         return attempt
 
@@ -70,16 +67,11 @@ class QuizAttemptService:
     ) -> QuizAttempt:
         """Start a quiz, or transparently resume an unfinished one."""
 
-        result = await self.db.execute(
-            select(Quiz).where(Quiz.id == quiz_id)
-        )
+        result = await self.db.execute(select(Quiz).where(Quiz.id == quiz_id))
         quiz = result.scalar_one_or_none()
 
         if not quiz:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Quiz {quiz_id} does not exist",
-            )
+            raise BadRequestError(f"Quiz {quiz_id} does not exist")
 
         existing = await self.attempt_repo.get_in_progress_for_quiz(
             student_id,
@@ -143,10 +135,7 @@ class QuizAttemptService:
         attempt = await self._get(attempt_id)
 
         if attempt.status == QuizAttemptStatus.COMPLETED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Attempt already submitted",
-            )
+            raise BadRequestError("Attempt already submitted")
 
         answers = await self.attempt_repo.get_answers(attempt_id)
 
@@ -156,9 +145,7 @@ class QuizAttemptService:
             if answer.marks_obtained is not None:
                 total += answer.marks_obtained
 
-        result = await self.db.execute(
-            select(Quiz).where(Quiz.id == attempt.quiz_id)
-        )
+        result = await self.db.execute(select(Quiz).where(Quiz.id == attempt.quiz_id))
         quiz = result.scalar_one_or_none()
 
         completed_at = datetime.now(timezone.utc)
@@ -192,10 +179,7 @@ class QuizAttemptService:
         attempt = await self._get(attempt_id)
 
         if attempt.status != QuizAttemptStatus.COMPLETED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Feedback can only be given on a submitted attempt",
-            )
+            raise BadRequestError("Feedback can only be given on a submitted attempt")
 
         attempt.feedback = feedback
         attempt.feedback_by = instructor_id

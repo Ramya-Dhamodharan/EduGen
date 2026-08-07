@@ -34,7 +34,11 @@ def _ensure_owner_or_instructor(user: User, owner_id: uuid.UUID) -> None:
 
 # ---- Public: verify a certificate by its number (no auth) ----
 # Declared before /{certificate_id} so "verify" isn't captured as an id.
-@router.get("/verify/{certificate_number}", response_model=CertificateVerifyOut)
+@router.get(
+    "/verify/{certificate_number}",
+    status_code=status.HTTP_200_OK,
+    response_model=CertificateVerifyOut,
+)
 async def verify_certificate(
     certificate_number: str,
     db: AsyncSession = Depends(get_db),
@@ -59,6 +63,7 @@ async def verify_certificate(
 # ---- Instructor only: list all ----
 @router.get(
     "",
+    status_code=status.HTTP_200_OK,
     response_model=List[CertificateOut],
     dependencies=[Depends(require_instructor)],
 )
@@ -69,7 +74,9 @@ async def list_certificates(
 
 
 # ---- Owner (student) or Instructor: view one ----
-@router.get("/{certificate_id}", response_model=CertificateOut)
+@router.get(
+    "/{certificate_id}", status_code=status.HTTP_200_OK, response_model=CertificateOut
+)
 async def get_certificate(
     certificate_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

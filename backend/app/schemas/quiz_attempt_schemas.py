@@ -34,4 +34,5 @@ class QuizAttemptOut(BaseModel):
 
 class QuizAttemptFeedback(BaseModel):
     """Body for PATCH /quiz-attempts/{attempt_id}/feedback - instructor feedback."""
+
     feedback: str = Field(..., min_length=1)

@@ -13,8 +13,8 @@ from pydantic import (
 # CREATE QUIZ QUESTION
 # ==================================================
 
-class QuizQuestionCreate(BaseModel):
 
+class QuizQuestionCreate(BaseModel):
     quiz_id: UUID
 
     question: str = Field(
@@ -54,14 +54,10 @@ class QuizQuestionCreate(BaseModel):
     def validate_correct_option(cls, value):
 
         if value is not None:
-
             value = value.upper()
 
             if value not in ["A", "B", "C", "D"]:
-
-                raise ValueError(
-                    "correct_option must be A, B, C or D"
-                )
+                raise ValueError("correct_option must be A, B, C or D")
 
         return value
 
@@ -70,8 +66,8 @@ class QuizQuestionCreate(BaseModel):
 # CREATE QUESTION UNDER QUIZ
 # ==================================================
 
-class QuizQuestionNestedCreate(BaseModel):
 
+class QuizQuestionNestedCreate(BaseModel):
     question: str = Field(
         ...,
         min_length=1,
@@ -109,14 +105,10 @@ class QuizQuestionNestedCreate(BaseModel):
     def validate_correct_option(cls, value):
 
         if value is not None:
-
             value = value.upper()
 
             if value not in ["A", "B", "C", "D"]:
-
-                raise ValueError(
-                    "correct_option must be A, B, C or D"
-                )
+                raise ValueError("correct_option must be A, B, C or D")
 
         return value
 
@@ -125,8 +117,8 @@ class QuizQuestionNestedCreate(BaseModel):
 # UPDATE QUIZ QUESTION
 # ==================================================
 
-class QuizQuestionUpdate(BaseModel):
 
+class QuizQuestionUpdate(BaseModel):
     question: str | None = None
 
     option_a: str | None = None
@@ -149,14 +141,10 @@ class QuizQuestionUpdate(BaseModel):
     def validate_correct_option(cls, value):
 
         if value is not None:
-
             value = value.upper()
 
             if value not in ["A", "B", "C", "D"]:
-
-                raise ValueError(
-                    "correct_option must be A, B, C or D"
-                )
+                raise ValueError("correct_option must be A, B, C or D")
 
         return value
 
@@ -165,8 +153,8 @@ class QuizQuestionUpdate(BaseModel):
 # RESPONSE
 # ==================================================
 
-class QuizQuestionResponse(BaseModel):
 
+class QuizQuestionResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
     )

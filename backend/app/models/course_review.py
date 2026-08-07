@@ -8,7 +8,6 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
-    Index,
     Integer,
     PrimaryKeyConstraint,
     Text,
@@ -37,13 +36,11 @@ class CourseReview(Base):
             "id",
             name="pk_course_reviews",
         ),
-
         UniqueConstraint(
             "course_id",
             "student_id",
             name="uq_course_reviews_course_student",
         ),
-
         CheckConstraint(
             "rating BETWEEN 1 AND 5",
             name="ck_course_reviews_rating",
@@ -143,6 +140,4 @@ class CourseReview(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<CourseReview(id={self.id}, rating={self.rating})>"
-        )
+        return f"<CourseReview(id={self.id}, rating={self.rating})>"

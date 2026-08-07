@@ -1,4 +1,3 @@
-from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -11,10 +10,7 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
 )
-from app.utils.otp import (
-    generate_otp,
-    verify_otp
-)
+from app.utils.otp import generate_otp, verify_otp
 from app.models.user import User
 from app.schemas.user_schemas import UserOut
 from app.repositories.role_repo import RoleRepository
@@ -25,6 +21,13 @@ from app.schemas.auth_schemas import (
     ResetPasswordRequest,
 )
 from app.utils.email import send_otp_email
+from app.utils.exceptions import (
+    BadRequestError,
+    ForbiddenError,
+    InternalServerError,
+    NotFoundError,
+    UnauthorizedError,
+)
 
 DEFAULT_ROLE = "Student"
 
@@ -43,16 +46,12 @@ class AuthService:
     # ---------- Register ----------
     async def register(self, data: RegisterRequest) -> UserOut:
         if await self.users.get_by_email(data.email):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="An account with this email already exists.",
-            )
+            raise BadRequestError("An account with this email already exists.")
 
         role = await self.roles.get_by_name(DEFAULT_ROLE)
         if not role:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Default role '{DEFAULT_ROLE}' is missing. Seed the roles table first.",
+            raise InternalServerError(
+                f"Default role '{DEFAULT_ROLE}' is missing. Seed the roles table first."
             )
 
         user = User(
@@ -67,9 +66,7 @@ class AuthService:
         await self.db.commit()
 
         result = await self.db.execute(
-            select(User)
-            .options(selectinload(User.role))
-            .where(User.id == user.id)
+            select(User).options(selectinload(User.role)).where(User.id == user.id)
         )
 
         user = result.scalar_one()
@@ -91,34 +88,21 @@ class AuthService:
         user = await self.users.get_by_email(data.email)
 
         if not user or not verify_password(data.password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password",
-            )
+            raise UnauthorizedError("Invalid email or password")
 
         if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Account is deactivated",
-            )
+            raise ForbiddenError("Account is deactivated")
 
-        access = create_access_token(
-            {"sub": str(user.id), "role": user.role.name}
-        )
+        access = create_access_token({"sub": str(user.id), "role": user.role.name})
 
-        refresh = create_refresh_token(
-            {"sub": str(user.id)}
-        )
+        refresh = create_refresh_token({"sub": str(user.id)})
 
         return access, refresh
 
     # ---------- Refresh ----------
     async def refresh(self, refresh_token: str | None) -> str:
         if not refresh_token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Refresh token missing",
-            )
+            raise UnauthorizedError("Refresh token missing")
 
         try:
             payload = jwt.decode(
@@ -128,35 +112,21 @@ class AuthService:
             )
 
             if payload.get("type") != "refresh":
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token scope",
-                )
+                raise UnauthorizedError("Invalid token scope")
 
             user_id = payload.get("sub")
             if user_id is None:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid refresh token",
-                )
+                raise UnauthorizedError("Invalid refresh token")
 
         except JWTError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired refresh token",
-            )
+            raise UnauthorizedError("Invalid or expired refresh token")
 
         user = await self.users.get_by_id(user_id)
 
         if not user or not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User inactive or not found",
-            )
+            raise UnauthorizedError("User inactive or not found")
 
-        return create_access_token(
-            {"sub": str(user.id), "role": user.role.name}
-        )
+        return create_access_token({"sub": str(user.id), "role": user.role.name})
 
     # ---------- Forgot / Reset password ----------
     async def forgot_password(self, email: str) -> None:
@@ -174,18 +144,12 @@ class AuthService:
     ) -> None:
 
         if not await verify_otp(data.email, data.otp):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired OTP code",
-            )
+            raise BadRequestError("Invalid or expired OTP code")
 
         user = await self.users.get_by_email(data.email)
 
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
+            raise NotFoundError("User not found")
 
         user.password_hash = hash_password(data.new_password)
 
